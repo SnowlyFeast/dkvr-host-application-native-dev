@@ -4,6 +4,9 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
+#include <vector>
+
+#include "vector.h"
 
 namespace dkvr {
 
@@ -35,28 +38,21 @@ namespace dkvr {
 		return mat;
 	}
 
-	Matrix::Matrix(unsigned long row, unsigned long column) : row_(row), column_(column), data_((row* column) ? new float[row * column] : nullptr) { }
-
-	Matrix::Matrix(const Matrix& mat) : row_(mat.row_), column_(mat.column_), data_(mat.data_ ? new float[mat.row_ * mat.column_] : nullptr)
+	Matrix::Matrix(const Vector& vec) : row_(vec.size()), column_(0), data_(row_, 0.0f)
 	{
-		std::copy_n(mat.data_, row_ * column_, data_);
+		std::copy_n(vec.data(), row_, data_.data());
 	}
 
-	Matrix::Matrix(Matrix&& mat) noexcept : Matrix()
+	void Matrix::Fill(float values)
 	{
-		swap(*this, mat);
-	}
-
-	Matrix::~Matrix()
-	{
-		delete[] data_;
+		std::fill_n(data_.data(), data_.size(), values);
 	}
 
 	Vector Matrix::GetColumnVector(unsigned long c) const
 	{
 		Vector vec(row_);
 		for (unsigned long i = 0; i < row_; i++)
-			vec[i] = data_[i * column_ + c];
+			vec[i] = (*this)[i][c];
 		return vec;
 	}
 
@@ -116,17 +112,20 @@ namespace dkvr {
 		return cof.GetTranspose();
 	}
 
-	Matrix& Matrix::operator=(Matrix mat) noexcept
+
+	Matrix& Matrix::operator=(const Matrix& mat) noexcept
 	{
-		swap(*this, mat);
+		row_ = mat.row_;
+		column_ = mat.column_;
+		data_ = std::vector<float>(mat.data_);
 		return *this;
 	}
 
-	Matrix& Matrix::operator=(Vector vec) noexcept
+	Matrix& Matrix::operator=(Matrix&& mat) noexcept
 	{
-		Matrix mat(static_cast<unsigned long>(vec.size()), 1);
-		std::copy_n(vec.data(), vec.size(), mat.data_);
-		swap(*this, mat);
+		row_ = mat.row_;
+		column_ = mat.column_;
+		data_ = std::move(mat.data_);
 		return *this;
 	}
 
@@ -148,7 +147,7 @@ namespace dkvr {
 		unsigned long q = rhs.column_;
 
 		Matrix result(m, q);
-		result.Fill();
+		result.Fill(0);
 		for (unsigned long i = 0; i < m; i++)
 			for (unsigned long j = 0; j < q; j++)
 				for (unsigned long k = 0; k < n; k++)
@@ -164,7 +163,7 @@ namespace dkvr {
 #	endif
 
 		Vector result(mat.row_);
-		result.Fill();
+		result.Fill(0);
 		for (unsigned long i = 0; i < mat.row_; i++)
 			for (unsigned long j = 0; j < mat.column_; j++)
 				result[i] += mat[i][j] * vec[j];
@@ -178,18 +177,11 @@ namespace dkvr {
 			throw std::invalid_argument("lhs vector length and rhs matrix column length are different.");
 #	endif
 		Matrix result(1, mat.column_);
-		result.Fill();
+		result.Fill(0);
 		for (unsigned long i = 0; i < result.column_; i++)
 			for (unsigned long j = 0; j < vec.size(); j++)
 				result.data_[i] = vec[j] * mat[j][i];
 		return result;
-	}
-
-	void swap(Matrix& lhs, Matrix& rhs)
-	{
-		std::swap(lhs.row_, rhs.row_);
-		std::swap(lhs.column_, rhs.column_);
-		std::swap(lhs.data_, rhs.data_);
 	}
 
 }	// namespace dkvr

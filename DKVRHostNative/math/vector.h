@@ -1,24 +1,26 @@
 #pragma once
 
-#include <type_traits>
+#include <vector>
 
 namespace dkvr {
 
 	class Vector
 	{
 	public:
-		Vector() : size_(0), data_(nullptr) { }
-		Vector(size_t size);
+		Vector() : data_() { }
+		Vector(size_t size) : data_(size, 0.0f) { }
 		Vector(size_t size, float arg...);
-		Vector(const Vector& vec);
-		Vector(Vector&& vec) noexcept;
-		virtual ~Vector();
+		Vector(const std::vector<float> std_vec) : data_(std_vec) { }
+		Vector(std::vector<float>&& std_vec) noexcept : data_(std_vec) { }
+		Vector(const Vector& vec) : data_(vec.data_) { }
+		Vector(Vector&& vec) noexcept : data_(std::move(vec.data_)) { }
 
-		void Fill(float def = 0);
+		void Fill(float value = 0.0f);
 		float GetEuclidianNorm(bool sqrt = true) const;
 		Vector GetNormalized() const;
 
-		Vector& operator= (Vector vec) noexcept;
+		Vector& operator= (const Vector& vec);
+		Vector& operator= (Vector&& vec) noexcept;
 
 		// no bound check indexer
 		float& operator[] (size_t i) { return data_[i]; };
@@ -26,19 +28,16 @@ namespace dkvr {
 
 		friend Vector operator* (Vector v, float d);
 		friend Vector operator* (float d, Vector v) { return v * d; }
-		// it's dot-product, not element-wise multiplication
-		friend float operator* (Vector lhs, Vector rhs);
+		friend float operator* (Vector lhs, Vector rhs);	// it's dot-product, not element-wise multiplication
 		friend Vector operator+ (Vector lhs, Vector rhs);
 		friend Vector operator- (Vector lhs, Vector rhs);
 
-		friend void swap(Vector& lhs, Vector& rhs);
-
-		size_t size() const { return size_; }
-		float* data() const { return data_; }
-
+		size_t size() const { return data_.size(); }
+		float* data() { return data_.data(); }
+		const float* data() const { return data_.data(); }
+		
 	protected:
-		size_t size_;
-		float* data_;
+		std::vector<float> data_;
 	};
 
 	struct Vector3
@@ -56,7 +55,5 @@ namespace dkvr {
 
 		float x, y, z;
 	};
-
-	static_assert(std::is_standard_layout_v<Vector3>);
 
 }	// namespace dkvr
