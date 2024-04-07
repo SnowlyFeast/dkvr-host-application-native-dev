@@ -47,6 +47,9 @@ namespace dkvr {
 
 		float& operator[] (int i) { return i == 0 ? x : (i == 1 ? y : z); }
 		float operator[] (int i) const { return i == 0 ? x : (i == 1 ? y : z); }
+		Vector3& operator+= (Vector3 rhs) { x += rhs.x; y += rhs.y; z += rhs.z; return *this; }
+		Vector3& operator*= (float f) { x *= f; y *= f; z *= f; return *this; }
+		Vector3& operator/= (float f) { x /= f; y /= f; z /= f; return *this; }
 
 		friend Vector3 operator+ (Vector3 lhs, Vector3 rhs) { return Vector3{ lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z }; }
 		friend Vector3 operator- (Vector3 lhs, Vector3 rhs) { return Vector3{ lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z }; }
