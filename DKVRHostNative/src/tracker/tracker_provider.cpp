@@ -35,12 +35,40 @@ namespace dkvr {
 		return InternalAddTracker(address);
 	}
 
+	AtomicTracker TrackerProvider::FindByIndex(int index)
+	{
+		std::lock_guard<std::mutex> lock(mutex_);
+
+		if (index < 0 || index >= trackers_.size())
+			return AtomicTracker();
+
+		TrackerMutexPair& target = trackers_.at(index);
+		return AtomicTracker(&target.first, target.second);
+	}
+
 	std::vector<AtomicTracker> TrackerProvider::GetAllTrackers()
 	{
 		std::vector<AtomicTracker> v;
+		std::lock_guard<std::mutex> lock(mutex_);
 		for (TrackerMutexPair& p : trackers_)
 			v.emplace_back(&p.first, p.second);
 		return v;
+	}
+
+	int TrackerProvider::GetIndexOf(const Tracker* target)
+	{
+		if (target == nullptr)
+			return -1;
+
+		int index = 0;
+		std::lock_guard<std::mutex> lock(mutex_);
+		for (TrackerMutexPair& pair : trackers_)
+		{
+			if (pair.first.address() == target->address())
+				return index;
+			index++;
+		}
+		return -1;
 	}
 
 	AtomicTracker TrackerProvider::InternalAddTracker(unsigned long address)
