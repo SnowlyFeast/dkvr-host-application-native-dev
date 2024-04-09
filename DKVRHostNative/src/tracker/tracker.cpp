@@ -3,16 +3,19 @@
 namespace dkvr {
 
 	Tracker::Tracker(unsigned long address) :
-		info_{ .address = address }, connection_(ConnectionStatus::Disconnected), behavior_{}, calib_{}, netstat_{}, validator_(), readings_{}
+		info_{ .address = address }, connection_(ConnectionStatus::Disconnected), netstat_{}, behavior_{}, calib_{}, validator_(), readings_{}, status_{}
 	{
+		behavior_.Reset();
 	}
 
 	void Tracker::Reset()
 	{
 		connection_ = ConnectionStatus::Disconnected;
 		netstat_ = NetworkStatistics{};
+		calib_.Reset();
 		validator_.InvalidateAll();
 		readings_ = IMUReadings{};
+		status_ = TrackerStatus{};
 	}
 
 	void Tracker::UpdateRtt()
@@ -22,22 +25,11 @@ namespace dkvr {
 		netstat_.rtt = duration_cast<milliseconds>(rtt);
 	}
 
-	void Tracker::set_gyro_offset(float* offset)
+	void Tracker::InvalidateCalibration()
 	{
-		memcpy_s(calib_.gyro_offset, sizeof(calib_.gyro_offset), offset, sizeof(calib_.gyro_offset));
-		InvalidateCalibGr();
-	}
-
-	void Tracker::set_accel_mat(float* mat)
-	{
-		memcpy_s(calib_.accel_mat, sizeof(calib_.accel_mat), mat, sizeof(calib_.accel_mat));
-		InvalidateCalibAc();
-	}
-
-	void Tracker::set_mag_mat(float* mat)
-	{
-		memcpy_s(calib_.mag_mat, sizeof(calib_.mag_mat), mat, sizeof(calib_.mag_mat));
-		InvalidateCalibMg();
+		validator_.Invalidate(ConfigurationKey::CalibrationGr);
+		validator_.Invalidate(ConfigurationKey::CalibrationAc);
+		validator_.Invalidate(ConfigurationKey::CalibrationMg);
 	}
 
 }	// namespace dkvr

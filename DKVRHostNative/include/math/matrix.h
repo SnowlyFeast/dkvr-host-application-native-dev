@@ -45,6 +45,8 @@ namespace dkvr {
 
 		unsigned long row() const { return row_; }
 		unsigned long column() const { return column_; }
+		const float* data() const { return data_.data(); }
+		size_t size() const { return data_.size(); }
 
 	protected:
 		unsigned long row_;
