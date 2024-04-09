@@ -21,118 +21,112 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="framework.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="pch.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="math\vector.h">
+    <ClInclude Include="include\math\vector.h">
       <Filter>헤더 파일\Math</Filter>
     </ClInclude>
-    <ClInclude Include="math\qr_algorithm.h">
+    <ClInclude Include="include\math\qr_algorithm.h">
       <Filter>헤더 파일\Math</Filter>
     </ClInclude>
-    <ClInclude Include="math\matrix.h">
+    <ClInclude Include="include\math\matrix.h">
       <Filter>헤더 파일\Math</Filter>
     </ClInclude>
-    <ClInclude Include="math\ellipsoid_estimator.h">
+    <ClInclude Include="include\math\ellipsoid_estimator.h">
       <Filter>헤더 파일\Math</Filter>
     </ClInclude>
-    <ClInclude Include="tracker\tracker_configuration.h">
+    <ClInclude Include="include\tracker\tracker_configuration.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="math\quaternion.h">
+    <ClInclude Include="include\math\quaternion.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="network\winsock2_udp_server.h">
+    <ClInclude Include="include\network\winsock2_udp_server.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="network\udp_server.h">
+    <ClInclude Include="include\network\udp_server.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="network\network_service.h">
+    <ClInclude Include="include\network\network_service.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="util\thread_pool.h">
+    <ClInclude Include="include\util\thread_pool.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="network\datagram.h">
+    <ClInclude Include="include\network\datagram.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="network\net_result.h">
+    <ClInclude Include="include\network\net_result.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="util\logger.h">
+    <ClInclude Include="include\util\logger.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="fmt\core.h">
+    <ClInclude Include="lib\fmt\core.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="fmt\format.h">
+    <ClInclude Include="lib\fmt\format.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="fmt\format-inl.h">
+    <ClInclude Include="lib\fmt\format-inl.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="fmt\chrono.h">
+    <ClInclude Include="lib\fmt\chrono.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="fmt\ostream.h">
+    <ClInclude Include="lib\fmt\ostream.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="controller\instruction_dispatcher.h">
+    <ClInclude Include="include\controller\instruction_dispatcher.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="tracker\tracker.h">
+    <ClInclude Include="include\tracker\tracker.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="tracker\tracker_netstat.h">
+    <ClInclude Include="include\tracker\tracker_netstat.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="tracker\tracker_info.h">
+    <ClInclude Include="include\tracker\tracker_info.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="tracker\tracker_imu.h">
+    <ClInclude Include="include\tracker\tracker_imu.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="controller\instruction_set.h">
+    <ClInclude Include="include\controller\instruction_set.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="tracker\tracker_provider.h">
+    <ClInclude Include="include\tracker\tracker_provider.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="util\string_parser.h">
+    <ClInclude Include="include\util\string_parser.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="controller\con_network.h">
+    <ClInclude Include="include\controller\instruction_handler.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="controller\con_miscell.h">
+    <ClInclude Include="include\tracker\atomic_tracker.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="controller\con_config.h">
+    <ClInclude Include="include\controller\instruction_format.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="controller\controller.h">
+    <ClInclude Include="include\tracker\tracker_config_validator.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="tracker\atomic_tracker.h">
+    <ClInclude Include="include\controller\tracker_updater.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="controller\instruction_format.h">
+    <ClInclude Include="include\tracker\tracker_status.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="controller\con_data.h">
+    <ClInclude Include="include\calibrator\gyro_calibrator.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="tracker\tracker_config_validator.h">
+    <ClInclude Include="include\calibrator\accel_calibrator.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="controller\tracker_updater.h">
+    <ClInclude Include="include\calibrator\mag_calibrator.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="tracker\tracker_status.h">
+    <ClInclude Include="include\calibrator\calibration_manager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -140,77 +134,77 @@
     <ClCompile Include="DKVRHostNative.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="pch.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="math\vector.cpp">
+    <ClCompile Include="src\math\vector.cpp">
       <Filter>소스 파일\Math</Filter>
     </ClCompile>
-    <ClCompile Include="math\qr_algorithm.cpp">
+    <ClCompile Include="src\math\qr_algorithm.cpp">
       <Filter>소스 파일\Math</Filter>
     </ClCompile>
-    <ClCompile Include="math\matrix.cpp">
+    <ClCompile Include="src\math\matrix.cpp">
       <Filter>소스 파일\Math</Filter>
     </ClCompile>
-    <ClCompile Include="math\ellipsoid_estimator.cpp">
+    <ClCompile Include="src\math\ellipsoid_estimator.cpp">
       <Filter>소스 파일\Math</Filter>
     </ClCompile>
-    <ClCompile Include="math\quaternion.cpp">
+    <ClCompile Include="src\math\quaternion.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="network\winsock2_udp_server.cpp">
+    <ClCompile Include="src\network\winsock2_udp_server.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="network\udp_server.cpp">
+    <ClCompile Include="src\network\udp_server.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="network\network_service.cpp">
+    <ClCompile Include="src\network\network_service.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="util\thread_pool.cpp">
+    <ClCompile Include="src\util\thread_pool.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="util\logger.cpp">
+    <ClCompile Include="src\util\logger.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="fmt\format.cc">
+    <ClCompile Include="lib\fmt\format.cc">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="controller\instruction_dispatcher.cpp">
+    <ClCompile Include="src\controller\instruction_dispatcher.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="tracker\tracker.cpp">
+    <ClCompile Include="src\tracker\tracker.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="tracker\tracker_configuration.cpp">
+    <ClCompile Include="src\tracker\tracker_configuration.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="tracker\tracker_provider.cpp">
+    <ClCompile Include="src\tracker\tracker_provider.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="util\string_parser.cpp">
+    <ClCompile Include="src\util\string_parser.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="controller\con_network.cpp">
+    <ClCompile Include="src\tracker\tracker_config_validator.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="controller\con_miscell.cpp">
+    <ClCompile Include="src\controller\tracker_updater.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="controller\con_config.cpp">
+    <ClCompile Include="src\calibrator\accel_calibrator.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="controller\con_data.cpp">
+    <ClCompile Include="src\calibrator\mag_calibrator.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="tracker\tracker_config_validator.cpp">
+    <ClCompile Include="src\controller\instruction_handler.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="controller\tracker_updater.cpp">
+    <ClCompile Include="src\calibrator\gyro_calibrator.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="src\calibrator\calibration_manager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="fmt\LICENSE" />
+    <None Include="lib\fmt\LICENSE" />
   </ItemGroup>
 </Project>

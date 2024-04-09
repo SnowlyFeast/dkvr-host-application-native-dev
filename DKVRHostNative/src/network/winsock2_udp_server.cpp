@@ -15,15 +15,25 @@
 
 namespace dkvr {
 
-	static void IncreaseDelay(std::chrono::milliseconds&);
-	static void DecreaseDelay(std::chrono::milliseconds&);
-	constexpr long long kThreadDelayUpperLimit = 512;
+	namespace {
+		void IncreaseDelay(std::chrono::milliseconds& delay) {
+			if (delay.count() < kThreadDelayUpperLimit)
+				delay *= 2;
+		}
+
+		void DecreaseDelay(std::chrono::milliseconds& delay) {
+			if (delay.count() > kThreadDelayLowerLimit)
+				delay /= 2;
+		}
+
+		constexpr long long kThreadDelayUpperLimit = 512;
 #ifdef DKVR_SYSTEM_ENABLE_FULL_THROTTLE
-	constexpr long long kThreadDelayLowerLimit = 8;
+		constexpr long long kThreadDelayLowerLimit = 8;
 #else
-	constexpr long long kThreadDelayLowerLimit = 16;
+		constexpr long long kThreadDelayLowerLimit = 16;
 #endif
-	constexpr long long kYieldDurationLimit = 10;
+		constexpr long long kYieldDurationLimit = 10;
+	}
 
 
 	Winsock2UDPServer::Winsock2UDPServer() : wsa_data_{}, socket_(INVALID_SOCKET), net_thread_(nullptr), exit_flag_(false), arrivals_() { }
@@ -308,16 +318,6 @@ namespace dkvr {
 			logger_.Error("Network sendto failed : {}", error);
 			ParseWSAError(error);
 		}
-	}
-
-	static void IncreaseDelay(std::chrono::milliseconds& delay) {
-		if (delay.count() < kThreadDelayUpperLimit)
-			delay *= 2;
-	}
-
-	static void DecreaseDelay(std::chrono::milliseconds& delay) {
-		if (delay.count() > kThreadDelayLowerLimit)
-			delay /= 2;
 	}
 
 }	// namespace dkvr
