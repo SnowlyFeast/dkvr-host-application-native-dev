@@ -16,7 +16,10 @@ namespace dkvr {
 		static TrackerProvider& GetInstance();
 
 		AtomicTracker FindExistOrInsertNew(unsigned long address);
+		AtomicTracker FindByIndex(int index);
 		std::vector<AtomicTracker> GetAllTrackers();
+
+		int GetIndexOf(const Tracker* target);
 
 	private:
 		using TrackerMutexPair = std::pair<Tracker, std::shared_ptr<std::mutex>>;

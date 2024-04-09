@@ -11,15 +11,7 @@ namespace dkvr
 	class GyroCalibrator
 	{
 	public:
-		static Vector3 CalculateGyroOffset(const std::vector<IMUReadings>& samples)
-		{
-			Vector3 mean{};
-			for (const IMUReadings& s : samples)
-				mean += s.gyr;
-			mean /= samples.size();
-
-			return mean;
-		}
+		static Vector3 CalculateOffset(const std::vector<IMUReadings>& samples);
 	};
 
 }	// namespace dkvr
