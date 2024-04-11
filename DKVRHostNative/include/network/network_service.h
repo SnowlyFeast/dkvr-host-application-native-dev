@@ -18,8 +18,8 @@ namespace dkvr {
 		NetworkService();
 		~NetworkService();
 
-		bool Init();
 		bool Run(unsigned short port = 8899);
+		void Stop();
 		unsigned long WaitAndPopReceived(Instruction& out);
 		void Send(unsigned long address, Instruction& inst);
 		void RequestWakeup() { udp_->Wakeup(); }
