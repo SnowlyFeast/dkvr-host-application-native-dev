@@ -5,7 +5,7 @@
 
 namespace dkvr {
 
-	struct NetworkStatistics
+	struct TrackerNetworkStatistics
 	{
 		uint32_t send_sequence_num;
 		uint32_t recv_sequence_num;

@@ -13,7 +13,7 @@ namespace dkvr {
 		constexpr uint8_t kBitInvalid		= 0b10000000;
 	}
 
-	constexpr uint8_t Behavior::Encode() const
+	constexpr uint8_t TrackerBehavior::Encode() const
 	{
 		uint8_t result = 0;
 		if (active) result |= kBitmaskActive;
@@ -22,7 +22,7 @@ namespace dkvr {
 		return result;
 	}
 
-	void Behavior::Decode(uint8_t behavior)
+	void TrackerBehavior::Decode(uint8_t behavior)
 	{
 		if (behavior & kBitInvalid) return;
 
@@ -31,7 +31,7 @@ namespace dkvr {
 		led		= behavior & kBitmaskLed;
 	}
 
-	void Behavior::Reset()
+	void TrackerBehavior::Reset()
 	{
 		active = false;
 		raw = false;

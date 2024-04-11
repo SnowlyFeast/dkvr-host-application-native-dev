@@ -4,6 +4,9 @@
 
 #include "controller/instruction_set.h"
 
+#include "tracker/tracker.h"
+#include "tracker/tracker_info.h"
+
 namespace dkvr {
 
 	static Instruction BuildInstruction(InstructionHint, uint32_t, const void*);
@@ -67,17 +70,17 @@ namespace dkvr {
 		switch (target->connection_status())
 		{
 		default:
-		case Tracker::ConnectionStatus::Disconnected:
+		case ConnectionStatus::Disconnected:
 			break;
 
-		case Tracker::ConnectionStatus::Handshaked:
+		case ConnectionStatus::Handshaked:
 		{
 			Instruction inst = BuildInstruction(InstructionSet::Handshake2, target->send_sequence_num(), nullptr);
 			net_service_.Send(target->address(), inst);
 			break;
 		}
 
-		case Tracker::ConnectionStatus::Connected:
+		case ConnectionStatus::Connected:
 		{
 			using namespace std::chrono;
 
