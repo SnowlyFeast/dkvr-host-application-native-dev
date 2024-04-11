@@ -3,15 +3,21 @@
 namespace dkvr {
 
 	Tracker::Tracker(unsigned long address) :
-		info_{ .address = address }, connection_(ConnectionStatus::Disconnected), netstat_{}, behavior_{}, calib_{}, validator_(), readings_{}, status_{}
+		info_{ .address = address, .name = "unnamed tracker", .connection = ConnectionStatus::Disconnected },
+		netstat_{},
+		behavior_{},
+		calib_{},
+		validator_(),
+		readings_{},
+		status_{}
 	{
 		behavior_.Reset();
 	}
 
 	void Tracker::Reset()
 	{
-		connection_ = ConnectionStatus::Disconnected;
-		netstat_ = NetworkStatistics{};
+		info_.connection = ConnectionStatus::Disconnected;
+		netstat_ = TrackerNetworkStatistics{};
 		calib_.Reset();
 		validator_.InvalidateAll();
 		readings_ = IMUReadings{};
