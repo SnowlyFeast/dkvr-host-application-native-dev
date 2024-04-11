@@ -7,7 +7,7 @@
 
 namespace dkvr {
 
-	struct Behavior
+	struct TrackerBehavior
 	{
 		static constexpr uint8_t kInvalid = (0b10000000u);
 

@@ -12,13 +12,6 @@ namespace dkvr {
 	class Tracker
 	{
 	public:
-		enum class ConnectionStatus
-		{
-			Disconnected,
-			Handshaked,
-			Connected
-		};
-
 		Tracker(unsigned long address);
 
 		void Reset();
@@ -30,14 +23,14 @@ namespace dkvr {
 		void set_name(std::string name) { info_.name = name; }
 
 		// connection status
-		ConnectionStatus connection_status() const { return connection_; }
-		bool IsDisconnected() const { return connection_ == ConnectionStatus::Disconnected; }
-		bool IsHandshaked() const { return connection_ == ConnectionStatus::Handshaked; }
-		bool IsConnected() const { return connection_ == ConnectionStatus::Connected; }
+		ConnectionStatus connection_status() const { return info_.connection; }
+		bool IsDisconnected() const { return info_.connection == ConnectionStatus::Disconnected; }
+		bool IsHandshaked() const { return info_.connection == ConnectionStatus::Handshaked; }
+		bool IsConnected() const { return info_.connection == ConnectionStatus::Connected; }
 
-		void SetDisconnected() { connection_ = ConnectionStatus::Disconnected; }
-		void SetHandshaked() { connection_ = ConnectionStatus::Handshaked; }
-		void SetConnected() { connection_ = ConnectionStatus::Connected; }
+		void SetDisconnected() { info_.connection = ConnectionStatus::Disconnected; }
+		void SetHandshaked() { info_.connection = ConnectionStatus::Handshaked; }
+		void SetConnected() { info_.connection = ConnectionStatus::Connected; }
 
 		// network statistics
 		uint32_t send_sequence_num() { return netstat_.send_sequence_num++; }
@@ -98,10 +91,9 @@ namespace dkvr {
 		void InvalidateBehavior() { validator_.Invalidate(ConfigurationKey::Behavior); }
 		void InvalidateCalibration();
 
-		Information info_;
-		ConnectionStatus connection_;
-		NetworkStatistics netstat_;
-		Behavior behavior_;
+		TrackerInformation info_;
+		TrackerNetworkStatistics netstat_;
+		TrackerBehavior behavior_;
 		Calibration calib_;
 		ConfigurationValidator validator_;
 		IMUReadings readings_;
