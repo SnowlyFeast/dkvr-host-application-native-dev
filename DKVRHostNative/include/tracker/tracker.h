@@ -64,9 +64,7 @@ namespace dkvr {
 		void set_active(bool active) { behavior_.active = active; InvalidateBehavior(); }
 		void set_raw(bool raw) { behavior_.raw = raw; InvalidateBehavior(); }
 		void set_led(bool led) { behavior_.led = led; InvalidateBehavior(); }
-		void set_gyro_offset(float* offset);
-		void set_accel_mat(float* mat);
-		void set_mag_mat(float* mat);
+		void set_calibration(Calibration calib) { calib_ = calib; InvalidateCalibration(); }
 
 		// validator
 		std::vector<ConfigurationKey> GetEveryInvalid() const { return validator_.GetEveryInvalid(); }
@@ -81,6 +79,7 @@ namespace dkvr {
 		Vector3 gyro() const { return readings_.gyr; }
 		Vector3 accel() const { return readings_.acc; }
 		Vector3 mag() const { return readings_.mag; }
+		IMUReadings imu_readings() const { return readings_; }
 
 		void set_quaternion(Quaternion quat) { readings_.quat = quat; }
 		void set_gyro(Vector3 gyro) { readings_.gyr = gyro; }
@@ -97,9 +96,7 @@ namespace dkvr {
 		
 	private:
 		void InvalidateBehavior() { validator_.Invalidate(ConfigurationKey::Behavior); }
-		void InvalidateCalibGr() { validator_.Invalidate(ConfigurationKey::CalibrationGr); }
-		void InvalidateCalibAc() { validator_.Invalidate(ConfigurationKey::CalibrationAc); }
-		void InvalidateCalibMg() { validator_.Invalidate(ConfigurationKey::CalibrationMg); }
+		void InvalidateCalibration();
 
 		Information info_;
 		ConnectionStatus connection_;

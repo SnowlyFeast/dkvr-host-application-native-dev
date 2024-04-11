@@ -46,17 +46,17 @@ namespace dkvr
 
 		Matrix expected(6, 3);
 		expected.Fill(0);
-		expected[0][2] = -1.0f;	// Z+ upward
-		expected[1][2] = -1.0f;	// Z- upward
-		expected[2][1] = -1.0f;	// Y+ upward
+		expected[0][0] =  1.0f;	// X+ upward
+		expected[1][0] = -1.0f;	// X- upward
+		expected[2][1] =  1.0f;	// Y+ upward
 		expected[3][1] = -1.0f;	// Y- upward
-		expected[4][0] = -1.0f;	// X+ upward
-		expected[5][0] = -1.0f;	// X- upward
-
+		expected[4][2] =  1.0f;	// Z+ upward
+		expected[5][2] = -1.0f;	// Z- upward
+		
 		// least squre method
 		Matrix raw_trans = raw.GetTranspose();
 		Matrix result = (raw_trans * raw).GetInverse() * raw_trans * expected;
 
-		return result;
+		return result.GetTranspose();	// to row major
 	}
 }	// namespace dkvr
