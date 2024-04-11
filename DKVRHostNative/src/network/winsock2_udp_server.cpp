@@ -116,7 +116,7 @@ namespace dkvr {
 		// run net thread
 		logger_.Debug("[Winsock2] Launching network thread.");
 		exit_flag_ = false;
-		net_thread_ = new std::thread(&Winsock2UDPServer::NetworkThreadLoop, this);
+		net_thread_ = std::make_unique<std::thread>(&Winsock2UDPServer::NetworkThreadLoop, this);
 
 		return NetResult::OK;
 	}
@@ -126,8 +126,7 @@ namespace dkvr {
 		exit_flag_ = true;
 		if (net_thread_) {
 			net_thread_->join();
-			delete net_thread_;
-			net_thread_ = nullptr;
+			net_thread_.reset();
 			logger_.Debug("[Winsock2] Network thread cleaned up.");
 		}
 

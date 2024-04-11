@@ -19,26 +19,15 @@ namespace dkvr {
 #endif
     static bool IsPowerOf2(uint8_t num);
 
-    NetworkService& NetworkService::GetInstance()
-    {
-        static NetworkService instance;
-        return instance;
-    }
-
     NetworkService::NetworkService() :
 #ifdef _WIN32
-        udp_(new Winsock2UDPServer())
+        udp_(std::make_unique<Winsock2UDPServer>())
 #endif
     {
     }
 
     NetworkService::~NetworkService()
     {
-        if (udp_) 
-        {
-            delete udp_;
-            udp_ = nullptr;
-        }
     }
 
     bool NetworkService::Init()

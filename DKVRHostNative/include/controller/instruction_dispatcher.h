@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <memory>
 #include <thread>
 
 #include "controller/instruction_format.h"
@@ -14,7 +15,7 @@ namespace dkvr {
 	class InstructionDispatcher
 	{
 	public:
-		InstructionDispatcher() : thread_(nullptr), exit_flag_(false), inst_handle_() { }
+		InstructionDispatcher(NetworkService& net_service, TrackerProvider& tk_provider);
 
 		void Run();
 		void Stop();
@@ -23,12 +24,12 @@ namespace dkvr {
 		void DispatcherThreadLoop();
 		void Dispatch(unsigned long address, Instruction& inst);
 
-		std::thread* thread_;
+		std::unique_ptr<std::thread> thread_ptr_;
 		std::atomic_bool exit_flag_;
 		InstructionHandler inst_handle_;
 
-		NetworkService& net_service_ = NetworkService::GetInstance();
-		TrackerProvider& tk_provider_ = TrackerProvider::GetInstance();
+		NetworkService& net_service_;
+		TrackerProvider& tk_provider_;
 		Logger& logger_ = Logger::GetInstance();
 	};
 

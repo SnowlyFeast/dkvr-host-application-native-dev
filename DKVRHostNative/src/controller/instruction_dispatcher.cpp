@@ -6,25 +6,27 @@
 
 namespace dkvr {
 
+	InstructionDispatcher::InstructionDispatcher(NetworkService& net_service, TrackerProvider& tk_provider)
+		: thread_ptr_(nullptr), exit_flag_(false), inst_handle_(), net_service_(net_service), tk_provider_(tk_provider) { }
+
 	void InstructionDispatcher::Run()
 	{
-		if (thread_)
+		if (thread_ptr_)
 			return;
 
 		logger_.Debug("Launching dispatcher thread.");
 		exit_flag_ = false;
-		thread_ = new std::thread(&InstructionDispatcher::DispatcherThreadLoop, this);
+		thread_ptr_ = std::make_unique<std::thread>(&InstructionDispatcher::DispatcherThreadLoop, this);
 	}
 
 	void InstructionDispatcher::Stop()
 	{
-		if (thread_) 
+		if (thread_ptr_) 
 		{
 			exit_flag_ = true;
 			net_service_.RequestWakeup();
-			thread_->join();
-			delete thread_;
-			thread_ = nullptr;
+			thread_ptr_->join();
+			thread_ptr_.reset();
 			logger_.Debug("Dispatcher thread successfully closed.");
 		}
 	}

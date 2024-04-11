@@ -13,24 +13,26 @@ namespace dkvr {
 	constexpr long long kTimeoutInterval	= 5000;
 	constexpr long long kRttUpdateInterval	= 5000;
 
+	TrackerUpdater::TrackerUpdater(NetworkService& net_service, TrackerProvider& tk_provider) :
+		thread_ptr_(nullptr), exit_flag_(false), now_(), net_service_(net_service), tk_provider_(tk_provider) { }
+
 	void TrackerUpdater::Run()
 	{
-		if (thread_)
+		if (thread_ptr_)
 			return;
 
 		logger_.Debug("Launching tracker updater thread.");
 		exit_flag_ = false;
-		thread_ = new std::thread(&TrackerUpdater::UpdaterThreadLoop, this);
+		thread_ptr_ = std::make_unique<std::thread>(&TrackerUpdater::UpdaterThreadLoop, this);
 	}
 
 	void TrackerUpdater::Stop()
 	{
-		if (thread_) 
+		if (thread_ptr_) 
 		{
 			exit_flag_ = true;
-			thread_->join();
-			delete thread_;
-			thread_ = nullptr;
+			thread_ptr_->join();
+			thread_ptr_.reset();
 			logger_.Debug("Tracker updater thread successfully closed.");
 		}
 	}

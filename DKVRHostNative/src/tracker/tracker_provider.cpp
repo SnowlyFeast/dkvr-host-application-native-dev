@@ -12,10 +12,12 @@
 
 namespace dkvr {
 
-	TrackerProvider& TrackerProvider::GetInstance()
+	TrackerProvider::~TrackerProvider()
 	{
-		static TrackerProvider instance;
-		return instance;
+		for (TrackerMutexPair& p : trackers_)
+		{
+			std::unique_lock<std::mutex> lock(*p.second);
+		}
 	}
 
 	AtomicTracker TrackerProvider::FindExistOrInsertNew(unsigned long address)

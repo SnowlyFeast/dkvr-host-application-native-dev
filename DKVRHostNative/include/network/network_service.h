@@ -2,6 +2,7 @@
 
 #include <condition_variable>
 #include <list>
+#include <memory>
 #include <mutex>
 #include <queue>
 
@@ -14,7 +15,8 @@ namespace dkvr {
 	class NetworkService
 	{
 	public:
-		static NetworkService& GetInstance();
+		NetworkService();
+		~NetworkService();
 
 		bool Init();
 		bool Run(unsigned short port = 8899);
@@ -23,14 +25,12 @@ namespace dkvr {
 		void RequestWakeup() { udp_->Wakeup(); }
 
 	private:
-		NetworkService();
 		NetworkService(const NetworkService&) = delete;
 		NetworkService(NetworkService&&) = delete;
-		~NetworkService();
 		void operator= (const NetworkService&) = delete;
 		void operator= (NetworkService&&) = delete;
 
-		UDPServer* udp_;
+		std::unique_ptr<UDPServer> udp_;
 
 		Logger& logger_ = Logger::GetInstance();
 	};

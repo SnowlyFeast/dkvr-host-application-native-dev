@@ -46,7 +46,7 @@ namespace dkvr
 			Rotational
 		};
 
-		CalibrationManager();
+		CalibrationManager(TrackerProvider& tk_provider);
 
 		/// <summary>
 		/// calling Begin() will cancel the current calibraiton process
@@ -86,7 +86,7 @@ namespace dkvr
 		float mag_noise_var_;
 		Calibration result_;
 
-		TrackerProvider& tk_provider_ = TrackerProvider::GetInstance();
+		TrackerProvider& tk_provider_;
 		Logger& logger_ = Logger::GetInstance();
 	};
 
