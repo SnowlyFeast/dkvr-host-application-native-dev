@@ -1,7 +1,9 @@
 #pragma once
 
-#include <thread>
 #include <atomic>
+#include <chrono>
+#include <memory>
+#include <thread>
 
 #include "network/network_service.h"
 #include "tracker/tracker_provider.h"
@@ -12,7 +14,7 @@ namespace dkvr {
 	class TrackerUpdater
 	{
 	public:
-		TrackerUpdater() : thread_(nullptr), exit_flag_(false), now_() { }
+		TrackerUpdater(NetworkService& net_service, TrackerProvider& tk_provider);
 
 		void Run();
 		void Stop();
@@ -26,12 +28,12 @@ namespace dkvr {
 		void UpdateRtt(Tracker* target);
 		void MatchConfigurationWithClient(Tracker* target);
 
-		std::thread* thread_;
+		std::unique_ptr<std::thread> thread_ptr_;
 		std::atomic_bool exit_flag_;
 		std::chrono::steady_clock::time_point now_;
 
-		NetworkService& net_service_ = NetworkService::GetInstance();
-		TrackerProvider& tk_provider_ = TrackerProvider::GetInstance();
+		NetworkService& net_service_;
+		TrackerProvider& tk_provider_;
 		Logger& logger_ = Logger::GetInstance();
 	};
 
