@@ -15,32 +15,29 @@
 namespace dkvr
 {
 
-	namespace 
-	{
-		constexpr size_t kRequiredStaticSampleSize = 100;
-		constexpr size_t kRequiredRotationalSampleSize = 300;
-		constexpr std::chrono::milliseconds kValidationInterval(500);
-		constexpr std::chrono::milliseconds kRecordingInterval(50);
+	constexpr size_t kRequiredStaticSampleSize = 100;
+	constexpr size_t kRequiredRotationalSampleSize = 300;
+	constexpr std::chrono::milliseconds kValidationInterval(500);
+	constexpr std::chrono::milliseconds kRecordingInterval(50);
 
-		static const std::string kStringStandBy = "Stand By";
-		static const std::string kStringConfiguringTracker = "Configuring Tracker";
-		static const std::string kStringWaitingContinue = "Waiting Continue";
-		static const std::string kStringRecordingIMU = "Recording IMU";
-		static const std::string kStringCalibrating = "Calibrating";
+	static const std::string kStringStandBy = "Stand By";
+	static const std::string kStringConfiguringTracker = "Configuring Tracker";
+	static const std::string kStringWaitingContinue = "Waiting Continue";
+	static const std::string kStringRecordingIMU = "Recording IMU";
+	static const std::string kStringCalibrating = "Calibrating";
 
-		static const std::string kStringPositiveX = "Place the tracker with Positive X-axis facing up.";
-		static const std::string kStringNegativeX = "Place the tracker with Negative X-axis facing up.";
-		static const std::string kStringPositiveY = "Place the tracker with Positive Y-axis facing up.";
-		static const std::string kStringNegativeY = "Place the tracker with Negative Y-axis facing up.";
-		static const std::string kStringPositiveZ = "Place the tracker with Positive Z-axis facing up.";
-		static const std::string kStringNegativeZ = "Place the tracker with Negative Z-axis facing up.";
-		static const std::string kStringRotational = "Slowly rotate the tracker in as many different directions as possible.";
-	}
+	static const std::string kStringPositiveX = "Place the tracker with Positive X-axis facing up.";
+	static const std::string kStringNegativeX = "Place the tracker with Negative X-axis facing up.";
+	static const std::string kStringPositiveY = "Place the tracker with Positive Y-axis facing up.";
+	static const std::string kStringNegativeY = "Place the tracker with Negative Y-axis facing up.";
+	static const std::string kStringPositiveZ = "Place the tracker with Positive Z-axis facing up.";
+	static const std::string kStringNegativeZ = "Place the tracker with Negative Z-axis facing up.";
+	static const std::string kStringRotational = "Slowly rotate the tracker in as many different directions as possible.";
 
-	CalibrationManager::CalibrationManager() :
+	CalibrationManager::CalibrationManager(TrackerProvider& tk_provider) :
 		gyro_calib_(), accel_calib_(), mag_calib_(), status_(CalibrationStatus::StandBy),
 		sample_type_(SampleTypes::NegativeZ), target_index_(-1), saved_behavior_(Behavior::kInvalid), thread_ptr_(nullptr), exit_flag_(false),
-		samples_(), required_size_(0), mag_noise_var_(0.0f), result_{}
+		samples_(), required_size_(0), mag_noise_var_(0.0f), result_{}, tk_provider_(tk_provider)
 	{
 		samples_.reserve(kRequiredRotationalSampleSize);
 	}
@@ -50,7 +47,7 @@ namespace dkvr
 		Abort();
 		
 		target_index_ = tk_provider_.GetIndexOf(target);
-		thread_ptr_ = std::make_unique<std::thread>(CalibrationManager::ConfiguringThreadLoop, this);
+		thread_ptr_ = std::make_unique<std::thread>(&CalibrationManager::ConfiguringThreadLoop, this);
 		logger_.Info("Begin calibration of {}.", target->name());
 	}
 
@@ -66,7 +63,7 @@ namespace dkvr
 			thread_ptr_.reset();
 		}
 
-		thread_ptr_ = std::make_unique<std::thread>(CalibrationManager::RecordingThreadLoop, this);
+		thread_ptr_ = std::make_unique<std::thread>(&CalibrationManager::RecordingThreadLoop, this);
 	}
 
 	void CalibrationManager::Abort()
