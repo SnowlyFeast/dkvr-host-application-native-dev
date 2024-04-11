@@ -13,7 +13,8 @@ namespace dkvr {
 	class TrackerProvider
 	{
 	public:
-		static TrackerProvider& GetInstance();
+		TrackerProvider() : mutex_(), trackers_() { }
+		~TrackerProvider();
 
 		AtomicTracker FindExistOrInsertNew(unsigned long address);
 		std::vector<AtomicTracker> GetAllTrackers();
@@ -21,8 +22,6 @@ namespace dkvr {
 	private:
 		using TrackerMutexPair = std::pair<Tracker, std::shared_ptr<std::mutex>>;
 
-		TrackerProvider() : mutex_(), trackers_() { }
-		~TrackerProvider() { }
 		TrackerProvider(const TrackerProvider&) = delete;
 		TrackerProvider(TrackerProvider&&) = delete;
 		void operator= (const TrackerProvider&) = delete;
