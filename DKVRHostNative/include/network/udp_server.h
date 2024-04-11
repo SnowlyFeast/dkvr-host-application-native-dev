@@ -29,6 +29,7 @@ namespace dkvr {
 		int Init();
 		int Bind();
 		void Close();
+		void Deinit();
 		int PushSending(const Datagram& dgram);
 		bool PeekReceived() const;
 		bool WaitReceived() const;
@@ -44,6 +45,7 @@ namespace dkvr {
 		virtual int InternalInit() = 0;
 		virtual int InternalBind() = 0;	// responsible for handling recv and send
 		virtual void InternalClose() = 0;
+		virtual void InternalDeinit() = 0;
 
 		bool PeekSending() const;
 		Datagram PopSending();

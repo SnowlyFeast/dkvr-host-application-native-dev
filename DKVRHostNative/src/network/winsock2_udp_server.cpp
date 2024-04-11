@@ -129,7 +129,11 @@ namespace dkvr {
 			net_thread_.reset();
 			logger_.Debug("[Winsock2] Network thread cleaned up.");
 		}
+	}
 
+	void Winsock2UDPServer::InternalDeinit()
+	{
+		InternalClose();
 		if (socket_ != INVALID_SOCKET)
 			closesocket(socket_);
 		socket_ = INVALID_SOCKET;

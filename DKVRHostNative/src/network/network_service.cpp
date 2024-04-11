@@ -1,7 +1,7 @@
 #include "network/network_service.h"
 
-#include <assert.h>
 #include <cstring>
+#include <stdexcept>
 
 #ifdef DKVR_SYSTEM_BIG_ENDIAN
 #   include <algorithm>
@@ -24,21 +24,13 @@ namespace dkvr {
         udp_(std::make_unique<Winsock2UDPServer>())
 #endif
     {
+        if (udp_->Init())
+            throw std::runtime_error("UDP server init failed");
     }
 
     NetworkService::~NetworkService()
     {
-    }
-
-    bool NetworkService::Init()
-    {
-        int result = udp_->Init();
-        if (result) 
-        {
-            logger_.Error("[Network Service] Internal UDP Server init failed.");
-            return true;
-        }
-        return false;
+        udp_->Deinit();
     }
 
     bool NetworkService::Run(unsigned short port)
@@ -51,6 +43,11 @@ namespace dkvr {
             return true;
         }
         return false;
+    }
+
+    void NetworkService::Stop()
+    {
+        udp_->Close();
     }
 
     unsigned long NetworkService::WaitAndPopReceived(Instruction& out)

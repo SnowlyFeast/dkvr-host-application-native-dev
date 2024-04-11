@@ -43,6 +43,12 @@ namespace dkvr {
 			std::lock_guard<std::mutex> lock(mutex_);
 		}
 		InternalClose();
+		status_ = Status::StandBy;
+	}
+
+	void UDPServer::Deinit()
+	{
+		InternalDeinit();
 		status_ = Status::Closed;
 	}
 

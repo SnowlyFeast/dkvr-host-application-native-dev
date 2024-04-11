@@ -25,6 +25,7 @@ namespace dkvr {
 		int InternalInit() override;
 		int InternalBind() override;
 		void InternalClose() override;
+		void InternalDeinit() override;
 
 	private:
 		void ParseWSAError(int wsa_error);
