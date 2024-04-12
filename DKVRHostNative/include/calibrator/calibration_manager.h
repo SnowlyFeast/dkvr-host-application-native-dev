@@ -51,10 +51,11 @@ namespace dkvr
 		/// <summary>
 		/// calling Begin() will cancel the current calibraiton process
 		/// </summary>
-		void Begin(const Tracker* target);
+		void Begin(int index);
 		void Continue();
 		void Abort();
 
+		int GetCurrentCalibrationTarget() const { return target_index_; }
 		CalibrationStatus GetStatus() const;
 		SampleTypes GetRequiredSampleType() const;
 
