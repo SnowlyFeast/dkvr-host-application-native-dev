@@ -33,11 +33,17 @@ namespace dkvr {
 		return instance;
 	}
 
-	Logger::Logger() : mutex_(), unchecked_(), checked_(), out_(&std::cout), level_(Level::Info), mode_(Mode::Burst) { }
+	Logger::Logger() : mutex_(), unchecked_(), out_(&std::cout), level_(Level::Info), mode_(Mode::Burst) { }
 
 	Logger::~Logger()
 	{
 
+	}
+
+	int Logger::GetUncheckedCount() const
+	{
+		std::lock_guard<std::mutex> lock(mutex_);
+		return unchecked_.size();
 	}
 
 	void Logger::PrintUnchecked()
@@ -54,23 +60,9 @@ namespace dkvr {
 
 		for (std::size_t i = 0; i < count; i++) {
 			std::string& str = unchecked_.front();
-			checked_.push_back(str);
 			*out_ << str << std::endl;
 			unchecked_.pop();
 		}
-	}
-
-	void Logger::PrintChecked(std::size_t count)
-	{
-		PrintChecked(0, count);
-	}
-
-	void Logger::PrintChecked(std::size_t from, std::size_t count)
-	{
-		std::lock_guard<std::mutex> lock(mutex_);
-
-		// TODO: load log from save file
-
 	}
 
 	void Logger::Push(std::string&& str)
@@ -81,7 +73,6 @@ namespace dkvr {
 		{
 		case Logger::Mode::Echo:
 			(*out_) << str << std::endl;
-			checked_.emplace_back(std::move(str));
 			break;
 
 		default:
@@ -90,7 +81,6 @@ namespace dkvr {
 			break;
 
 		case Logger::Mode::Silent:
-			checked_.emplace_back(std::move(str));
 			break;
 		}
 	}
@@ -103,7 +93,6 @@ namespace dkvr {
 		{
 		case Logger::Mode::Echo:
 			(*out_) << str << std::endl;
-			checked_.push_back(str);
 			break;
 
 		default:
@@ -112,7 +101,6 @@ namespace dkvr {
 			break;
 
 		case Logger::Mode::Silent:
-			checked_.push_back(str);
 			break;
 		}
 	}
