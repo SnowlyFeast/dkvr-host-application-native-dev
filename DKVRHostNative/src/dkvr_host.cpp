@@ -65,6 +65,9 @@ namespace dkvr {
 
 		// calibrator
 		CalibrationManager::CalibrationStatus GetCalibratorStatus() { return calib_manager_.GetStatus(); }
+		int GetCalibratorTarget() { return calib_manager_.GetCurrentCalibrationTarget(); }
+		void BeginCalibrationWith(int index) { calib_manager_.Begin(index); }
+		void AbortCalibration() { calib_manager_.Abort(); }
 
 	private:
 		template <typename T>
@@ -208,4 +211,9 @@ void dkvrTrackerGetBatteryPerc(DKVRHostHandle handle, int index, int* out) { *ou
 void dkvrTrackerSetActive(DKVRHostHandle handle, int index, int in) { DKVRHOST(handle)->SetTrackerActive(index, in); }
 void dkvrTrackerSetRaw(DKVRHostHandle handle, int index, int in) { DKVRHOST(handle)->SetTrackerRaw(index, in); }
 void dkvrTrackerSetLed(DKVRHostHandle handle, int index, int in) { DKVRHOST(handle)->SetTrackerLed(index, in); }
-	
+
+// calibrator
+void dkvrCalibratorGetStatus(DKVRHostHandle handle, int* out) { *out = static_cast<int>(DKVRHOST(handle)->GetCalibratorStatus()); }
+void dkvrCalibratorGetCurrentTarget(DKVRHostHandle handle, int* out) { *out = DKVRHOST(handle)->GetCalibratorTarget(); }
+void dkvrCalibratorBeginWith(DKVRHostHandle handle, int index) { DKVRHOST(handle)->BeginCalibrationWith(index); }
+void dkvrCalibratorAbort(DKVRHostHandle handle) { DKVRHOST(handle)->AbortCalibration(); }

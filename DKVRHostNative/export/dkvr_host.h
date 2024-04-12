@@ -55,7 +55,12 @@ extern "C" {
 	DLLEXPORT void dkvrTrackerSetRaw(DKVRHostHandle handle, int index, int in);
 	DLLEXPORT void dkvrTrackerSetLed(DKVRHostHandle handle, int index, int in);
 
+	// calibrator
+	DLLEXPORT void dkvrCalibratorGetStatus(DKVRHostHandle handle, int* out);
+	DLLEXPORT void dkvrCalibratorGetCurrentTarget(DKVRHostHandle handle, int* out);
+	DLLEXPORT void dkvrCalibratorBeginWith(DKVRHostHandle handle, int index);
+	DLLEXPORT void dkvrCalibratorAbort(DKVRHostHandle handle);
+
 #ifdef __cplusplus
 }
 #endif
-
