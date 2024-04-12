@@ -113,7 +113,7 @@ namespace dkvr {
 	}
 
 
-	Matrix& Matrix::operator=(const Matrix& mat) noexcept
+	Matrix& Matrix::operator=(const Matrix& mat)
 	{
 		row_ = mat.row_;
 		column_ = mat.column_;
