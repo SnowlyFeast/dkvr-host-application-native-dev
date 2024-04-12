@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -71,7 +71,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <AllProjectIncludesArePublic>true</AllProjectIncludesArePublic>
+    <AllProjectIncludesArePublic>
+    </AllProjectIncludesArePublic>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -144,7 +145,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="DKVRHostNative.h" />
+    <ClInclude Include="export\dkvr_host.h" />
     <ClInclude Include="include\calibrator\accel_calibrator.h" />
     <ClInclude Include="include\calibrator\calibration_manager.h" />
     <ClInclude Include="include\calibrator\gyro_calibrator.h" />
@@ -152,6 +153,7 @@
     <ClInclude Include="include\controller\instruction_handler.h" />
     <ClInclude Include="include\controller\instruction_format.h" />
     <ClInclude Include="include\controller\tracker_updater.h" />
+    <ClInclude Include="include\version.h" />
     <ClInclude Include="lib\fmt\chrono.h" />
     <ClInclude Include="lib\fmt\core.h" />
     <ClInclude Include="lib\fmt\format-inl.h" />
@@ -189,9 +191,10 @@
     <ClCompile Include="src\calibrator\mag_calibrator.cpp" />
     <ClCompile Include="src\controller\instruction_handler.cpp" />
     <ClCompile Include="src\controller\tracker_updater.cpp" />
-    <ClCompile Include="DKVRHostNative.cpp" />
+    <ClCompile Include="src\dkvr_host.cpp" />
     <ClCompile Include="lib\fmt\format.cc" />
     <ClCompile Include="src\controller\instruction_dispatcher.cpp" />
+    <ClCompile Include="src\dllmain.cpp" />
     <ClCompile Include="src\tracker\tracker.cpp" />
     <ClCompile Include="src\tracker\tracker_configuration.cpp" />
     <ClCompile Include="src\tracker\tracker_config_validator.cpp" />

@@ -16,6 +16,14 @@
 namespace dkvr {
 
 	namespace {
+		constexpr long long kThreadDelayUpperLimit = 512;
+#ifdef DKVR_SYSTEM_ENABLE_FULL_THROTTLE
+		constexpr long long kThreadDelayLowerLimit = 8;
+#else
+		constexpr long long kThreadDelayLowerLimit = 16;
+#endif
+		constexpr long long kYieldDurationLimit = 10;
+
 		void IncreaseDelay(std::chrono::milliseconds& delay) {
 			if (delay.count() < kThreadDelayUpperLimit)
 				delay *= 2;
@@ -25,14 +33,6 @@ namespace dkvr {
 			if (delay.count() > kThreadDelayLowerLimit)
 				delay /= 2;
 		}
-
-		constexpr long long kThreadDelayUpperLimit = 512;
-#ifdef DKVR_SYSTEM_ENABLE_FULL_THROTTLE
-		constexpr long long kThreadDelayLowerLimit = 8;
-#else
-		constexpr long long kThreadDelayLowerLimit = 16;
-#endif
-		constexpr long long kYieldDurationLimit = 10;
 	}
 
 

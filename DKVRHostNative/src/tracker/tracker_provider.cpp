@@ -16,7 +16,7 @@ namespace dkvr {
 	{
 		for (TrackerMutexPair& p : trackers_)
 		{
-			std::unique_lock<std::mutex> lock(*p.second);
+			std::lock_guard<std::mutex> lock(*p.second);
 		}
 	}
 
@@ -48,6 +48,17 @@ namespace dkvr {
 		return AtomicTracker(&target.first, target.second);
 	}
 
+	ConstAtomicTracker TrackerProvider::FindByIndex(int index) const
+	{
+		std::lock_guard<std::mutex> lock(mutex_);
+
+		if (index < 0 || index >= trackers_.size())
+			return ConstAtomicTracker();
+
+		const TrackerMutexPair& target = trackers_.at(index);
+		return ConstAtomicTracker(&target.first, target.second);
+	}
+
 	std::vector<AtomicTracker> TrackerProvider::GetAllTrackers()
 	{
 		std::vector<AtomicTracker> v;
@@ -55,6 +66,12 @@ namespace dkvr {
 		for (TrackerMutexPair& p : trackers_)
 			v.emplace_back(&p.first, p.second);
 		return v;
+	}
+
+	int TrackerProvider::GetCount() const
+	{
+		std::lock_guard<std::mutex> lock(mutex_);
+		return trackers_.size();
 	}
 
 	int TrackerProvider::GetIndexOf(const Tracker* target)

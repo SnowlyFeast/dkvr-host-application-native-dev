@@ -40,7 +40,7 @@ namespace dkvr {
 		enum class Mode {
 			Echo,	// print logs to the console immediately
 			Burst,	// hold logs ultil explicitly call PrintUnchecked()
-			Silent	// all logs will automatically checked
+			Silent	// all logs will automatically checked (ignored)
 		};
 
 		static Logger& GetInstance();
@@ -52,22 +52,22 @@ namespace dkvr {
 		template<typename... Args>
 		void Debug(const fmt::format_string<Args...> fmt, Args&&... args);
 
+		int GetUncheckedCount() const;
 		void PrintUnchecked();
 		void PrintUnchecked(std::size_t count);
-		void PrintChecked(std::size_t count);
-		void PrintChecked(std::size_t from, std::size_t count);
 
 		Logger& operator<< (std::string&& str) { Push(std::move(str)); return *this; }
 		Logger& operator<< (const std::string& str) { Push(str); return *this; }
-		Logger& operator<< (Level level) { this->level(level); return *this; }
-		Logger& operator<< (Mode mode) { this->mode(mode); return *this; }
+		Logger& operator<< (Level level) { set_level(level); return *this; }
+		Logger& operator<< (Mode mode) { set_mode(mode); return *this; }
 
 		std::ostream& ostream() const { return *out_; }
-		void ostream(std::ostream& ostream) { out_ = &ostream; }
 		Level level() const { return level_; }
-		void level(Level level) { level_ = level; }
 		Mode mode() const { return mode_; }
-		void mode(Mode mode) { mode_ = mode; }
+
+		void set_ostream(std::ostream& ostream) { out_ = &ostream; }
+		void set_level(Level level) { level_ = level; }
+		void set_mode(Mode mode) { mode_ = mode; }
 
 	private:
 		Logger();
@@ -80,12 +80,8 @@ namespace dkvr {
 		void Push(std::string&& str);
 		void Push(const std::string& str);
 
-		void SaveLog();
-		void ReadLog();
-
-		std::mutex mutex_;
+		mutable std::mutex mutex_;
 		std::queue<std::string> unchecked_;
-		std::list<std::string> checked_;
 		std::ostream* out_;
 		Level level_;
 		Mode mode_;

@@ -36,19 +36,23 @@ namespace dkvr
 
 	CalibrationManager::CalibrationManager(TrackerProvider& tk_provider) :
 		gyro_calib_(), accel_calib_(), mag_calib_(), status_(CalibrationStatus::StandBy),
-		sample_type_(SampleTypes::NegativeZ), target_index_(-1), saved_behavior_(Behavior::kInvalid), thread_ptr_(nullptr), exit_flag_(false),
+		sample_type_(SampleTypes::NegativeZ), target_index_(-1), saved_behavior_(TrackerBehavior::kInvalid), thread_ptr_(nullptr), exit_flag_(false),
 		samples_(), required_size_(0), mag_noise_var_(0.0f), result_{}, tk_provider_(tk_provider)
 	{
 		samples_.reserve(kRequiredRotationalSampleSize);
 	}
 
-	void CalibrationManager::Begin(const Tracker* target)
+	void CalibrationManager::Begin(int index)
 	{
 		Abort();
 		
-		target_index_ = tk_provider_.GetIndexOf(target);
-		thread_ptr_ = std::make_unique<std::thread>(&CalibrationManager::ConfiguringThreadLoop, this);
-		logger_.Info("Begin calibration of {}.", target->name());
+		AtomicTracker target = tk_provider_.FindByIndex(index);
+		if (target)
+		{
+			target_index_ = index;
+			thread_ptr_ = std::make_unique<std::thread>(&CalibrationManager::ConfiguringThreadLoop, this);
+			logger_.Info("Begin calibration of {}.", target->name());
+		}
 	}
 
 	void CalibrationManager::Continue()
@@ -80,7 +84,7 @@ namespace dkvr
 			}
 
 			// rollback tracker config
-			if (target_index_ != -1 && saved_behavior_ != Behavior::kInvalid)
+			if (target_index_ != -1 && saved_behavior_ != TrackerBehavior::kInvalid)
 			{
 				AtomicTracker target = tk_provider_.FindByIndex(target_index_);
 				target->set_behavior(saved_behavior_);
@@ -166,7 +170,7 @@ namespace dkvr
 		status_ = CalibrationStatus::StandBy;
 		sample_type_ = SampleTypes(0);
 		target_index_ = -1;
-		saved_behavior_ = Behavior::kInvalid;
+		saved_behavior_ = TrackerBehavior::kInvalid;
 
 		exit_flag_ = false;
 
@@ -177,7 +181,7 @@ namespace dkvr
 
 	void CalibrationManager::ConfiguringThreadLoop()
 	{
-		constexpr Behavior kCalibBehavior
+		constexpr TrackerBehavior kCalibBehavior
 		{
 			.active = true,
 			.raw = true,
