@@ -11,7 +11,8 @@ namespace dkvr {
 	{
 		static constexpr uint8_t kInvalid = (0b10000000u);
 
-		constexpr uint8_t Encode() const;
+		static constexpr uint8_t Encode(TrackerBehavior behavior);
+		uint8_t Encode() const;
 		void Decode(uint8_t behavior);
 		void Reset();
 
