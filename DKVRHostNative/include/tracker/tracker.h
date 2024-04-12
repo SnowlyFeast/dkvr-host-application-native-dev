@@ -38,7 +38,7 @@ namespace dkvr {
 		std::chrono::steady_clock::time_point last_heartbeat_sent() const { return netstat_.last_heartbeat_sent; }
 		std::chrono::steady_clock::time_point last_heartbeat_recv() const { return netstat_.last_heartbeat_recv; }
 		std::chrono::steady_clock::time_point last_ping_sent() const { return netstat_.last_ping_sent; }
-		std::chrono::milliseconds rtt() const { return netstat_.rtt; }
+		long long rtt() const { return netstat_.rtt.count(); }
 
 		//void IncreaseSendSequenceNumber() { netstat_.send_sequence_num++; }
 		void set_recv_sequence_num(uint32_t seq) { netstat_.recv_sequence_num = seq; }
@@ -49,6 +49,9 @@ namespace dkvr {
 
 		// configuration
 		uint8_t behavior() const { return behavior_.Encode(); }
+		bool active() const { return behavior_.active; }
+		bool raw() const { return behavior_.raw; }
+		bool led() const { return behavior_.led; }
 		const float* gyro_offset() const { return calib_.gyro_offset; }
 		const float* accel_mat() const { return calib_.accel_mat; }
 		const float* mag_mat() const { return calib_.mag_mat; }
@@ -85,7 +88,6 @@ namespace dkvr {
 		uint8_t battery_perc() const { return status_.battery_perc; }
 
 		void set_tracker_status(TrackerStatus status) { status_ = status; }
-
 		
 	private:
 		void InvalidateBehavior() { validator_.Invalidate(ConfigurationKey::Behavior); }
