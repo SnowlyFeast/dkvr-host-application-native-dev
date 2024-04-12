@@ -1,90 +1,75 @@
 #include "pch.h"
 
+#include "../DKVRHostNative/export/dkvr_host.h"
 
-#include "../DKVRHostNative/math/ellipsoid_estimator.h"
-#include "../DKVRHostNative/math/matrix.h"
-#include "../DKVRHostNative/math/vector.h"
-
-#include "../DKVRHostNative/util/logger.h"
-
-#include "../DKVRHostNative/network/network_service.h"
-#include "../DKVRHostNative/tracker/tracker_provider.h"
-#include "../DKVRHostNative/controller/instruction_set.h"
-#include "../DKVRHostNative/controller/instruction_dispatcher.h"
-#include "../DKVRHostNative/controller/tracker_updater.h"
-
-// about to delete
-#include "../DKVRHostNative/network/winsock2_udp_server.h"
-
-
-using namespace std;
-using namespace dkvr;
-
-void Init();
-void OpenDat(const string, vector<Vector3>&);
-void SaveDat(const string, const vector<Vector3>&);
-void PrintMatrix(const Vector&);
-void PrintMatrix(const Matrix&);
-
-bool exit_flag = false;
-
+char global_buffer[2048];
 
 TEST(Struct, size_test)
 {
-	// set logger
-	Logger& logger = Logger::GetInstance();
-	logger << Logger::Mode::Echo << Logger::Level::Debug;
-	logger.Debug("UnitTest Runner.");
+	// check header and dll version
+	int assertion;
+	dkvrAssertVersion(DKVR_HOST_EXPORTED_HEADER_VER, &assertion);
+	ASSERT_TRUE(assertion);
+	
+	// create instance and assert handle
+	DKVRHostHandle handle = nullptr;
+	dkvrCreateInstance(&handle);
+	ASSERT_NE(handle, nullptr);
 
-	// componentes
-	TrackerProvider& tk_provider = TrackerProvider::GetInstance();
-	NetworkService& net_service = NetworkService::GetInstance();
-	InstructionDispatcher inst_dispatcher;
-	TrackerUpdater tk_updater;
+	// run instance and assert
+	dkvrRunHost(handle);
+	dkvrIsRunning(handle, &assertion);
+	ASSERT_TRUE(assertion);
 
-	// init network
-	bool net_result = net_service.Init();
-	ASSERT_EQ(net_result, false);
-	net_result = net_service.Run();
-	ASSERT_EQ(net_result, false);
-
-	// dispatcher and updater
-	inst_dispatcher.Run();
-	tk_updater.Run();
-
-
-	uint32_t seq = 1;
-	unsigned long ip = (192 | (168 << 8) | (0 << 16) | (11 << 24));
-	while (true)
+	bool exit = false;
+	while (!exit)
 	{
-		char k;
-		cin >> k;
+		int input;
+		std::cin >> input;
 
-		if (k == 'c')
+		switch (input)
+		{
+		case -1:
+			exit = true;
 			break;
 
-		if (k == 's')
+		case 0:
 		{
-			Instruction inst{};
-			inst.header = kHeaderValue;
-			inst.opcode = static_cast<uint8_t>(Opcode::Status);
-			inst.align = 0;
-			inst.length = 0;
-			inst.sequence = seq++;
-			net_service.QueueSending(ip, inst);
+			dkvrLoggerGetUncheckedLogAll(handle, global_buffer, sizeof(global_buffer));
+			std::cout << global_buffer;
 		}
 
-		if (k == 't')
+		case 1:
 		{
-			AtomicTracker target = tk_provider.FindExistOrInsertNew(ip);
-			cout << target->battery_perc();
+			dkvrLoggerGetUncheckedLogOne(handle, global_buffer, sizeof(global_buffer));
+			std::cout << global_buffer;
 		}
 
+		default:
+			break;
+		}
 	}
 
-	tk_updater.Stop();
-	inst_dispatcher.Stop();
+
+	// clean up
+	dkvrStopHost(handle);
+	dkvrLoggerGetUncheckedLogAll(handle, global_buffer, sizeof(global_buffer));
+	std::cout << global_buffer;
+
+	dkvrDeleteInstance(&handle);
 }
+
+//
+//using namespace std;
+//using namespace dkvr;
+//
+//void Init();
+//void OpenDat(const string, vector<Vector3>&);
+//void SaveDat(const string, const vector<Vector3>&);
+//void PrintMatrix(const Vector&);
+//void PrintMatrix(const Matrix&);
+//
+//bool exit_flag = false;
 
 
 //TEST(Matrix, TestName) {
