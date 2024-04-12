@@ -3,7 +3,13 @@
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
+#include <sstream>
 #include <string>
+
+#ifdef _DEBUG
+#else
+#	define DKVR_LOGGER_GLOBAL_LEVEL		1
+#endif
 
 #include "calibrator/calibration_manager.h"
 #include "controller/instruction_dispatcher.h"
@@ -11,8 +17,9 @@
 #include "network/network_service.h"
 #include "tracker/tracker_provider.h"
 #include "util/logger.h"
+#include "version.h"
 
-#define DKVR_HOST_VERSION	1001
+#define DKVRHOST(handle)	(static_cast<dkvr::DKVRHost*>(handle))
 
 namespace dkvr {
 
@@ -21,9 +28,19 @@ namespace dkvr {
 	public:
 		DKVRHost();
 
+		// instance control
 		void Run();
 		void Stop();
 		bool IsRunning() const { return is_running_; }
+
+		// logger
+		void SetLoggerLevelDebug() { logger_.set_level(dkvr::Logger::Level::Debug); }
+		void SetLoggerLevelInfo() { logger_.set_level(dkvr::Logger::Level::Info); }
+		void SetLoggerLevelError() { logger_.set_level(dkvr::Logger::Level::Error); }
+
+		int GetUncheckedLogCount() const { return logger_.GetUncheckedCount(); }
+		std::string GetUncheckedLogOne() { logger_output_.str(std::string()); logger_output_.clear(); logger_.PrintUnchecked(1); return logger_output_.str(); }
+		std::string GetUncheckedLogAll() { logger_output_.str(std::string()); logger_output_.clear(); logger_.PrintUnchecked(); return logger_output_.str(); }
 
 		// tracker
 		int GetTrackerCount() const { return tk_provider_.GetCount(); }
@@ -73,6 +90,7 @@ namespace dkvr {
 		Logger& logger_ = Logger::GetInstance();
 
 		bool is_running_ = false;
+		std::stringstream logger_output_;
 	};
 
 	DKVRHost::DKVRHost() try :
@@ -80,7 +98,18 @@ namespace dkvr {
 		tk_provider_(),
 		inst_dispatcher_(net_service_, tk_provider_),
 		tracker_updater_(net_service_, tk_provider_),
-		calib_manager_(tk_provider_) { }
+		calib_manager_(tk_provider_)
+	{
+		logger_.set_level(
+#ifdef _DEBUG
+			dkvr::Logger::Level::Debug
+#else
+			dkvr::Logger::Level::Info
+#endif
+		);
+		logger_.set_mode(dkvr::Logger::Mode::Burst);
+		logger_.set_ostream(logger_output_);
+	}
 	catch (std::runtime_error except)
 	{
 		throw except;	// just rethrow it
@@ -108,54 +137,73 @@ namespace dkvr {
 
 }
 
+// version
+void dkvrVersion(int* out) { *out = DKVR_HOST_VERSION; }
+void dkvrAssertVersion(int version, int* success) { *success = (DKVR_HOST_VERSION == version); }
 
-#define DKVRHOST(handle)	(static_cast<dkvr::DKVRHost*>(handle))
-
-int dkvrVersion() { return DKVR_HOST_VERSION; }
-int dkvrAssertVersion(int version) { return DKVR_HOST_VERSION == version; }
-
-void dkvrCreateInstance(DKVRHostHandle handle) { try { handle = new dkvr::DKVRHost(); } catch (std::exception except) { handle = nullptr; } }
-void dkvrDeleteInstance(DKVRHostHandle handle) { delete handle; handle = nullptr; }
+// instance control
+void dkvrCreateInstance(DKVRHostHandle* hptr) { try { *hptr = new dkvr::DKVRHost(); } catch (std::exception except) { *hptr = nullptr; } }
+void dkvrDeleteInstance(DKVRHostHandle* hptr) { delete *hptr; *hptr = nullptr; }
 void dkvrRunHost(DKVRHostHandle handle) { DKVRHOST(handle)->Run(); }
-void dkvrIsRunning(DKVRHostHandle handle, int* result) { *result = DKVRHOST(handle)->IsRunning(); }
 void dkvrStopHost(DKVRHostHandle handle) { DKVRHOST(handle)->Stop(); }
+void dkvrIsRunning(DKVRHostHandle handle, int* running) { *running = (DKVRHOST(handle)->IsRunning()); }
 
-void dkvrTrackerCount(DKVRHostHandle handle, int* out) { *out = DKVRHOST(handle)->GetTrackerCount(); }
-void dkvrTrackerAddress(DKVRHostHandle handle, int index, long* out) { *out = DKVRHOST(handle)->GetTrackerIPAdress(index); }
-void dkvrTrackerName(DKVRHostHandle handle, int index, char* out, int len)
+// logger
+void dkvrLoggerSetLevelDebug(DKVRHostHandle handle) { DKVRHOST(handle)->SetLoggerLevelDebug(); }
+void dkvrLoggerSetLevelInfo(DKVRHostHandle handle) { DKVRHOST(handle)->SetLoggerLevelInfo(); }
+void dkvrLoggerSetLevelError(DKVRHostHandle handle) { DKVRHOST(handle)->SetLoggerLevelError(); }
+
+void dkvrLoggerGetUncheckCount(DKVRHostHandle handle, int* out) { *out = DKVRHOST(handle)->GetUncheckedLogCount(); }
+void dkvrLoggerGetUncheckedLogOne(DKVRHostHandle handle, char* out, int len)
+{
+	std::string log = DKVRHOST(handle)->GetUncheckedLogOne();
+	memcpy_s(out, len, log.c_str(), log.size() + 1);
+}
+void dkvrLoggerGetUncheckedLogAll(DKVRHostHandle handle, char* out, int len)
+{
+	std::string log = DKVRHOST(handle)->GetUncheckedLogAll();
+	memcpy_s(out, len, log.c_str(), log.size() + 1);
+}
+
+// tracker
+void dkvrTrackerGetCount(DKVRHostHandle handle, int* out) { *out = DKVRHOST(handle)->GetTrackerCount(); }
+void dkvrTrackerGetAddress(DKVRHostHandle handle, int index, long* out) { *out = DKVRHOST(handle)->GetTrackerIPAdress(index); }
+void dkvrTrackerGetName(DKVRHostHandle handle, int index, char* out, int len)
 {
 	std::string name = DKVRHOST(handle)->GetTrackerName(index);
-	memcpy_s(out, len, name.c_str(), name.size());
+	memcpy_s(out, len, name.c_str(), name.size() + 1);
 }
-void dkvrTrackerConnectionStatus(DKVRHostHandle handle, int index, int* out) { *out = static_cast<int>(DKVRHOST(handle)->GetTrackerConnectionStatus(index)); }
-
-void dkvrTrackerRtt(DKVRHostHandle handle, int index, int* out) { *out = static_cast<int>(DKVRHOST(handle)->GetTrackerRtt(index)); }
-void dkvrTrackerAcitve(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerAcitve(index); }
-void dkvrTrackerRaw(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerRaw(index); }
-void dkvrTrackerLed(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerLed(index); }
-void dkvrTrackerQuat(DKVRHostHandle handle, int index, float* out)
+void dkvrTrackerGetConnectionStatus(DKVRHostHandle handle, int index, int* out)
+{
+	*out = static_cast<int>(DKVRHOST(handle)->GetTrackerConnectionStatus(index));
+}
+void dkvrTrackerGetRtt(DKVRHostHandle handle, int index, int* out) { *out = static_cast<int>(DKVRHOST(handle)->GetTrackerRtt(index)); }
+void dkvrTrackerGetAcitve(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerAcitve(index); }
+void dkvrTrackerGetRaw(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerRaw(index); }
+void dkvrTrackerGetLed(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerLed(index); }
+void dkvrTrackerGetQuat(DKVRHostHandle handle, int index, float* out)
 {
 	dkvr::Quaternion quat = DKVRHOST(handle)->GetTrackerQuat(index);
 	memcpy_s(out, sizeof(quat), &quat, sizeof(quat));
 }
-void dkvrTrackerGyro(DKVRHostHandle handle, int index, float* out)
+void dkvrTrackerGetGyro(DKVRHostHandle handle, int index, float* out)
 {
 	dkvr::Vector3 vec = DKVRHOST(handle)->GetTrackerGyro(index);
 	memcpy_s(out, sizeof(vec), &vec, sizeof(vec));
 }
-void dkvrTrackerAccel(DKVRHostHandle handle, int index, float* out) 
+void dkvrTrackerGetAccel(DKVRHostHandle handle, int index, float* out)
 {
 	dkvr::Vector3 vec = DKVRHOST(handle)->GetTrackerAccel(index);
 	memcpy_s(out, sizeof(vec), &vec, sizeof(vec));
 }
-void dkvrTrackerMag(DKVRHostHandle handle, int index, float* out)
+void dkvrTrackerGetMag(DKVRHostHandle handle, int index, float* out)
 {
 	dkvr::Vector3 vec = DKVRHOST(handle)->GetTrackerMag(index);
 	memcpy_s(out, sizeof(vec), &vec, sizeof(vec));
 }
-void dkvrTrackerInitResult(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerInitResult(index); }
-void dkvrTrackerLastError(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerLastError(index); }
-void dkvrTrackerBatteryPerc(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerBatteryPerc(index); }
+void dkvrTrackerGetInitResult(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerInitResult(index); }
+void dkvrTrackerGetLastError(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerLastError(index); }
+void dkvrTrackerGetBatteryPerc(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerBatteryPerc(index); }
 
 void dkvrTrackerSetActive(DKVRHostHandle handle, int index, int in) { DKVRHOST(handle)->SetTrackerActive(index, in); }
 void dkvrTrackerSetRaw(DKVRHostHandle handle, int index, int in) { DKVRHOST(handle)->SetTrackerRaw(index, in); }

@@ -129,14 +129,14 @@
     <ClInclude Include="include\calibrator\calibration_manager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="DKVRHostNative.h">
+    <ClInclude Include="export\dkvr_host.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="include\version.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DKVRHostNative.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="src\math\vector.cpp">
       <Filter>소스 파일\Math</Filter>
     </ClCompile>
@@ -204,6 +204,12 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="src\calibrator\calibration_manager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dkvr_host.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dllmain.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

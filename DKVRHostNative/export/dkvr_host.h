@@ -6,7 +6,7 @@
 #	define DLLEXPORT	__declspec( dllimport )
 #endif
 
-#define DKVR_HOST_HEADER_VER	1001
+#define DKVR_HOST_EXPORTED_HEADER_VER	1001
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,31 +14,42 @@ extern "C" {
 
 	typedef void* DKVRHostHandle;
 
-	DLLEXPORT int dkvrVersion();
-	DLLEXPORT int dkvrAssertVersion(int version);
+	// version
+	DLLEXPORT void dkvrVersion(int* out);
+	DLLEXPORT void dkvrAssertVersion(int version, int* success);
 
-	DLLEXPORT void dkvrCreateInstance(DKVRHostHandle handle);
-	DLLEXPORT void dkvrDeleteInstance(DKVRHostHandle handle);
+	// instance control
+	DLLEXPORT void dkvrCreateInstance(DKVRHostHandle* hptr);
+	DLLEXPORT void dkvrDeleteInstance(DKVRHostHandle* hptr);
 	DLLEXPORT void dkvrRunHost(DKVRHostHandle handle);
-	DLLEXPORT void dkvrIsRunning(DKVRHostHandle handle, int* result);
 	DLLEXPORT void dkvrStopHost(DKVRHostHandle handle);
+	DLLEXPORT void dkvrIsRunning(DKVRHostHandle handle, int* running);
 
-	DLLEXPORT void dkvrTrackerCount(DKVRHostHandle handle, int* out);
-	DLLEXPORT void dkvrTrackerAddress(DKVRHostHandle handle, int index, long* out);
-	DLLEXPORT void dkvrTrackerName(DKVRHostHandle handle, int index, char* out, int len);
-	DLLEXPORT void dkvrTrackerConnectionStatus(DKVRHostHandle handle, int index, int* out);
+	// logger
+	DLLEXPORT void dkvrLoggerGetUncheckCount(DKVRHostHandle handle, int* out);
+	DLLEXPORT void dkvrLoggerGetUncheckedLogOne(DKVRHostHandle handle, char* out, int len);
+	DLLEXPORT void dkvrLoggerGetUncheckedLogAll(DKVRHostHandle handle, char* out, int len);
 
-	DLLEXPORT void dkvrTrackerRtt(DKVRHostHandle handle, int index, int* out);
-	DLLEXPORT void dkvrTrackerAcitve(DKVRHostHandle handle, int index, int* out);
-	DLLEXPORT void dkvrTrackerRaw(DKVRHostHandle handle, int index, int* out);
-	DLLEXPORT void dkvrTrackerLed(DKVRHostHandle handle, int index, int* out);
-	DLLEXPORT void dkvrTrackerQuat(DKVRHostHandle handle, int index, float* out);
-	DLLEXPORT void dkvrTrackerGyro(DKVRHostHandle handle, int index, float* out);
-	DLLEXPORT void dkvrTrackerAccel(DKVRHostHandle handle, int index, float* out);
-	DLLEXPORT void dkvrTrackerMag(DKVRHostHandle handle, int index, float* out);
-	DLLEXPORT void dkvrTrackerInitResult(DKVRHostHandle handle, int index, int* out);
-	DLLEXPORT void dkvrTrackerLastError(DKVRHostHandle handle, int index, int* out);
-	DLLEXPORT void dkvrTrackerBatteryPerc(DKVRHostHandle handle, int index, int* out);
+	DLLEXPORT void dkvrLoggerSetLevelDebug(DKVRHostHandle handle);
+	DLLEXPORT void dkvrLoggerSetLevelInfo(DKVRHostHandle handle);
+	DLLEXPORT void dkvrLoggerSetLevelError(DKVRHostHandle handle);
+
+	// tracker
+	DLLEXPORT void dkvrTrackerGetCount(DKVRHostHandle handle, int* out);
+	DLLEXPORT void dkvrTrackerGetAddress(DKVRHostHandle handle, int index, long* out);
+	DLLEXPORT void dkvrTrackerGetName(DKVRHostHandle handle, int index, char* out, int len);
+	DLLEXPORT void dkvrTrackerGetConnectionStatus(DKVRHostHandle handle, int index, int* out);
+	DLLEXPORT void dkvrTrackerGetRtt(DKVRHostHandle handle, int index, int* out);
+	DLLEXPORT void dkvrTrackerGetAcitve(DKVRHostHandle handle, int index, int* out);
+	DLLEXPORT void dkvrTrackerGetRaw(DKVRHostHandle handle, int index, int* out);
+	DLLEXPORT void dkvrTrackerGetLed(DKVRHostHandle handle, int index, int* out);
+	DLLEXPORT void dkvrTrackerGetQuat(DKVRHostHandle handle, int index, float* out);
+	DLLEXPORT void dkvrTrackerGetGyro(DKVRHostHandle handle, int index, float* out);
+	DLLEXPORT void dkvrTrackerGetAccel(DKVRHostHandle handle, int index, float* out);
+	DLLEXPORT void dkvrTrackerGetMag(DKVRHostHandle handle, int index, float* out);
+	DLLEXPORT void dkvrTrackerGetInitResult(DKVRHostHandle handle, int index, int* out);
+	DLLEXPORT void dkvrTrackerGetLastError(DKVRHostHandle handle, int index, int* out);
+	DLLEXPORT void dkvrTrackerGetBatteryPerc(DKVRHostHandle handle, int index, int* out);
 
 	DLLEXPORT void dkvrTrackerSetActive(DKVRHostHandle handle, int index, int in);
 	DLLEXPORT void dkvrTrackerSetRaw(DKVRHostHandle handle, int index, int in);
