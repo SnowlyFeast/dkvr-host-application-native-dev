@@ -12,6 +12,7 @@ namespace dkvr {
 		status_{}
 	{
 		behavior_.Reset();
+		calib_.Reset();
 	}
 
 	void Tracker::Reset()
