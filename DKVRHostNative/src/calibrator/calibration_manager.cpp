@@ -32,7 +32,7 @@ namespace dkvr
 	static const std::string kStringNegativeY = "Place the tracker with Negative Y-axis facing up.";
 	static const std::string kStringPositiveZ = "Place the tracker with Positive Z-axis facing up.";
 	static const std::string kStringNegativeZ = "Place the tracker with Negative Z-axis facing up.";
-	static const std::string kStringRotational = "Slowly rotate the tracker in as many different directions as possible.";
+	static const std::string kStringRotational = "Slowly rotate the tracker.";
 
 	CalibrationManager::CalibrationManager(TrackerProvider& tk_provider) :
 		gyro_calib_(), accel_calib_(), mag_calib_(), status_(CalibrationStatus::StandBy),
@@ -226,6 +226,7 @@ namespace dkvr
 		while (!exit_flag_)
 		{
 			{
+				// TODO: steady for axis, rotate for rotational checking logic
 				AtomicTracker target = tk_provider_.FindByIndex(target_index_);
 				samples_.push_back(target->imu_readings());
 			}
