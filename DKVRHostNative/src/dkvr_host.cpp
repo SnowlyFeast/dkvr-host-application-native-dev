@@ -1,6 +1,4 @@
-﻿#include "export/dkvr_host.h"
-
-#include <cstdint>
+﻿#include <cstdint>
 #include <cstring>
 #include <stdexcept>
 #include <sstream>
@@ -10,6 +8,8 @@
 #else
 #	define DKVR_LOGGER_GLOBAL_LEVEL		1
 #endif
+
+#include "export/dkvr_host.h"
 
 #include "calibrator/calibration_manager.h"
 #include "controller/instruction_dispatcher.h"
@@ -65,6 +65,9 @@ namespace dkvr {
 
 		// calibrator
 		CalibrationManager::CalibrationStatus GetCalibratorStatus() { return calib_manager_.GetStatus(); }
+		std::string GetCalibratorStatusAsString() { return calib_manager_.GetStatusAsString(); }
+		CalibrationManager::SampleTypes GetCalibratorRequiredSampleType() { return calib_manager_.GetRequiredSampleType(); }
+		std::string GetCalibratorRequiredSampleTypeAsString() { return calib_manager_.GetRequiredSampleTypeAsString(); }
 		int GetCalibratorTarget() { return calib_manager_.GetCurrentCalibrationTarget(); }
 		void BeginCalibrationWith(int index) { calib_manager_.Begin(index); }
 		void AbortCalibration() { calib_manager_.Abort(); }
@@ -161,12 +164,16 @@ void __stdcall dkvrLoggerGetUncheckCount(DKVRHostHandle handle, int* out) { *out
 void __stdcall dkvrLoggerGetUncheckedLogOne(DKVRHostHandle handle, char* out, int len)
 {
 	std::string log = DKVRHOST(handle)->GetUncheckedLogOne();
-	memcpy_s(out, len, log.c_str(), log.size() + 1);
+	size_t cap = std::min(log.size() + 1, static_cast<size_t>(len));
+	memcpy_s(out, len, log.c_str(), cap);
+	out[cap - 1] = '\0';
 }
 void __stdcall dkvrLoggerGetUncheckedLogAll(DKVRHostHandle handle, char* out, int len)
 {
 	std::string log = DKVRHOST(handle)->GetUncheckedLogAll();
-	memcpy_s(out, len, log.c_str(), log.size() + 1);
+	size_t cap = std::min(log.size() + 1, static_cast<size_t>(len));
+	memcpy_s(out, len, log.c_str(), cap);
+	out[cap - 1] = '\0';
 }
 
 // tracker
@@ -175,14 +182,16 @@ void __stdcall dkvrTrackerGetAddress(DKVRHostHandle handle, int index, long* out
 void __stdcall dkvrTrackerGetName(DKVRHostHandle handle, int index, char* out, int len)
 {
 	std::string name = DKVRHOST(handle)->GetTrackerName(index);
-	memcpy_s(out, len, name.c_str(), name.size() + 1);
+	size_t cap = std::min(name.size() + 1, static_cast<size_t>(len));
+	memcpy_s(out, len, name.c_str(), cap);
+	out[cap - 1] = '\0';
 }
 void __stdcall dkvrTrackerGetConnectionStatus(DKVRHostHandle handle, int index, int* out)
 {
 	*out = static_cast<int>(DKVRHOST(handle)->GetTrackerConnectionStatus(index));
 }
 void __stdcall dkvrTrackerGetRtt(DKVRHostHandle handle, int index, int* out) { *out = static_cast<int>(DKVRHOST(handle)->GetTrackerRtt(index)); }
-void __stdcall dkvrTrackerGetAcitve(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerAcitve(index); }
+void __stdcall dkvrTrackerGetActive(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerAcitve(index); }
 void __stdcall dkvrTrackerGetRaw(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerRaw(index); }
 void __stdcall dkvrTrackerGetLed(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerLed(index); }
 void __stdcall dkvrTrackerGetQuat(DKVRHostHandle handle, int index, Quaternion* out)
@@ -217,6 +226,22 @@ void __stdcall dkvrTrackerSetLed(DKVRHostHandle handle, int index, int in) { DKV
 
 // calibrator
 void __stdcall dkvrCalibratorGetStatus(DKVRHostHandle handle, int* out) { *out = static_cast<int>(DKVRHOST(handle)->GetCalibratorStatus()); }
+
+void __stdcall dkvrCalibratorGetStatusString(DKVRHostHandle handle, char* out, int len)
+{
+	std::string status = DKVRHOST(handle)->GetCalibratorStatusAsString();
+	size_t cap = std::min(status.size() + 1, static_cast<size_t>(len));
+	memcpy_s(out, len, status.c_str(), cap);
+	out[cap - 1] = '\0';
+}
+void __stdcall dkvrCalibratorGetRequiredSampleType(DKVRHostHandle handle, int* out) { *out = static_cast<int>(DKVRHOST(handle)->GetCalibratorRequiredSampleType()); }
+void __stdcall dkvrCalibratorGetRequiredSampleTypeString(DKVRHostHandle handle, char* out, int len)
+{
+	std::string type = DKVRHOST(handle)->GetCalibratorRequiredSampleTypeAsString();
+	size_t cap = std::min(type.size() + 1, static_cast<size_t>(len));
+	memcpy_s(out, len, type.c_str(), cap);
+	out[cap - 1] = '\0';
+}
 void __stdcall dkvrCalibratorGetCurrentTarget(DKVRHostHandle handle, int* out) { *out = DKVRHOST(handle)->GetCalibratorTarget(); }
 void __stdcall dkvrCalibratorBeginWith(DKVRHostHandle handle, int index) { DKVRHOST(handle)->BeginCalibrationWith(index); }
 void __stdcall dkvrCalibratorAbort(DKVRHostHandle handle) { DKVRHOST(handle)->AbortCalibration(); }

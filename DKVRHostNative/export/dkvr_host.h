@@ -42,7 +42,7 @@ extern "C" {
 	DLLEXPORT void __stdcall dkvrTrackerGetName(DKVRHostHandle handle, int index, char* out, int len);
 	DLLEXPORT void __stdcall dkvrTrackerGetConnectionStatus(DKVRHostHandle handle, int index, int* out);
 	DLLEXPORT void __stdcall dkvrTrackerGetRtt(DKVRHostHandle handle, int index, int* out);
-	DLLEXPORT void __stdcall dkvrTrackerGetAcitve(DKVRHostHandle handle, int index, int* out);
+	DLLEXPORT void __stdcall dkvrTrackerGetActive(DKVRHostHandle handle, int index, int* out);
 	DLLEXPORT void __stdcall dkvrTrackerGetRaw(DKVRHostHandle handle, int index, int* out);
 	DLLEXPORT void __stdcall dkvrTrackerGetLed(DKVRHostHandle handle, int index, int* out);
 	DLLEXPORT void __stdcall dkvrTrackerGetQuat(DKVRHostHandle handle, int index, Quaternion* out);
@@ -59,6 +59,9 @@ extern "C" {
 
 	// calibrator
 	DLLEXPORT void __stdcall dkvrCalibratorGetStatus(DKVRHostHandle handle, int* out);
+	DLLEXPORT void __stdcall dkvrCalibratorGetStatusString(DKVRHostHandle handle, char* out, int len);
+	DLLEXPORT void __stdcall dkvrCalibratorGetRequiredSampleType(DKVRHostHandle handle, int* out);
+	DLLEXPORT void __stdcall dkvrCalibratorGetRequiredSampleTypeString(DKVRHostHandle handle, char* out, int len);
 	DLLEXPORT void __stdcall dkvrCalibratorGetCurrentTarget(DKVRHostHandle handle, int* out);
 	DLLEXPORT void __stdcall dkvrCalibratorBeginWith(DKVRHostHandle handle, int index);
 	DLLEXPORT void __stdcall dkvrCalibratorAbort(DKVRHostHandle handle);
