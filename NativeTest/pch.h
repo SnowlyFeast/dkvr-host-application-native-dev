@@ -6,12 +6,12 @@
 
 #include "gtest/gtest.h"
 
-#include <vector>
+#include <atomic>
+#include <chrono>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <queue>
 #include <sstream>
 #include <thread>
-#include <atomic>
-#include <chrono>
-#include <memory>
+#include <vector>

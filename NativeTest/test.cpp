@@ -64,7 +64,7 @@ void LoggerCheckingThreadLoop()
 		if (count)
 		{
 			dkvrLoggerGetUncheckedLogAll(handle, global_buffer, sizeof(global_buffer));
-			std::cout << global_buffer;
+			std::cout << '\r' << global_buffer << "> ";
 		}
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -88,8 +88,21 @@ static std::vector<std::string> split(std::string str, char Delimiter) {
 	return result;
 }
 
+#define ASSERT_ARG(arg, ss)	if (arg.size() < ss) { std::cout << "Missing arguments." << std::endl; return; }
+#define PARSE_STR(result, str, func)							\
+do {															\
+	try {														\
+		result = func(str);										\
+	}															\
+	catch (std::invalid_argument except)						\
+	{															\
+		std::cout << "argument parsing failed." << std::endl;	\
+	}															\
+} while(0)
+
 void ParseKeyInput()
 {
+	std::cout << "> ";
 	std::string str;
 	std::getline(std::cin, str, '\n');
 
@@ -98,22 +111,33 @@ void ParseKeyInput()
 
 	if (compare(cmd, "help"))
 	{
+		std::cout << "----------------------Available command----------------------" << std::endl;
 		std::cout << "exit" << std::endl;
 		std::cout << "list" << std::endl;
 		std::cout << "behavior [index] [value]" << std::endl;
 		std::cout << "imu [index] [interval]" << std::endl;
 		std::cout << "imustop" << std::endl << std::endl;
+		std::cout << "status" << std::endl;
+		std::cout << "status update" << std::endl;
+		std::cout << "locate [index]" << std::endl;
 
 		std::cout << "calib status" << std::endl;
 		std::cout << "calib begin [index]" << std::endl;
 		std::cout << "calib continue" << std::endl;
 		std::cout << "calib abort" << std::endl;
+
+		std::cout << "save calib [index] [filename]" << std::endl;
+		std::cout << "load calib [index] [filename]" << std::endl;
+		std::cout << "-------------------------------------------------------------" << std::endl;
 	}
-	else if (compare(cmd, "exit")) 
+	else if (compare(cmd, "exit"))
 	{
+		imu_read_exit = true;
+		if (imu_read_thread)
+			imu_read_thread->join();
 		exit_flag = true;
 	}
-	else if (compare(cmd, "list")) 
+	else if (compare(cmd, "list"))
 	{
 		int count = 0;
 		dkvrTrackerGetCount(handle, &count);
@@ -143,25 +167,13 @@ void ParseKeyInput()
 				<< std::endl;
 		}
 	}
-	else if (compare(cmd, "behavior")) 
+	else if (compare(cmd, "behavior"))
 	{
-		if (arg.size() < 3)
-		{
-			std::cout << "Missing arguments." << std::endl;
-			return;
-		}
+		int target, behavior;
+		ASSERT_ARG(arg, 3);
+		PARSE_STR(target, arg[1], stoi);
+		PARSE_STR(behavior, arg[2], stoi);
 
-		int target;
-		int behavior;
-		try {
-			target = stoi(arg[1]);
-			behavior = stoi(arg[2]);
-		}
-		catch (std::invalid_argument inv_arg)
-		{
-			std::cout << "argument parsing failed." << std::endl;
-		}
-		
 		int active = behavior & 0b001;
 		int raw = behavior & 0b010;
 		int led = behavior & 0b100;
@@ -170,13 +182,9 @@ void ParseKeyInput()
 		dkvrTrackerSetLed(handle, target, led);
 		std::cout << "Setting " << target << "th tracker's behavior to " << behavior << "." << std::endl;
 	}
-	else if (compare(cmd, "imu")) 
+	else if (compare(cmd, "imu"))
 	{
-		if (arg.size() < 3)
-		{
-			std::cout << "Missing arguments." << std::endl;
-			return;
-		}
+		ASSERT_ARG(arg, 3);
 
 		if (imu_read_thread)
 		{
@@ -185,32 +193,54 @@ void ParseKeyInput()
 		}
 
 		int target, interval;
-		try
-		{
-			target = stoi(arg[1]);
-			interval = stoi(arg[2]);
-		}
-		catch (std::invalid_argument inv_arg)
-		{
-			std::cout << "argument parsing failed." << std::endl;
-		}
+		PARSE_STR(target, arg[1], stoi);
+		PARSE_STR(interval, arg[2], stoi);
+
 		imu_read_exit = false;
 		imu_read_thread = std::make_unique<std::thread>(ReadIMUThreadLoop, target, interval);
 	}
-	else if (compare(cmd, "imustop")) 
+	else if (compare(cmd, "imustop"))
 	{
 		imu_read_exit = true;
 		if (imu_read_thread)
 			imu_read_thread->join();
 		imu_read_thread.reset();
 	}
+	else if (compare(cmd, "status"))
+	{
+		int count = 0;
+		dkvrTrackerGetCount(handle, &count);
+		if (arg.size() >= 2 && compare(arg[1], "update"))
+		{
+			for (int i = 0; i < count; i++)
+				dkvrTrackerRequestStatus(handle, i);
+			std::cout << "Tracker status update requested." << std::endl;
+		}
+		else
+		{
+			std::cout << "idx\tinit\tlast error\tbattery %" << std::endl;
+			std::cout << "-------------------------------------------------------------" << std::endl;
+			for (int i = 0; i < count; i++)
+			{
+				int init, last_err, battery_perc;
+				dkvrTrackerGetInitResult(handle, i, &init);
+				dkvrTrackerGetLastError(handle, i, &last_err);
+				dkvrTrackerGetBatteryPerc(handle, i, &battery_perc);
+				std::cout << i << '\t' << std::hex << (bool)init << '\t' << last_err << "\t\t" << std::dec << battery_perc << std::endl;
+			}
+		}
+	}
+	else if (compare(cmd, "locate"))
+	{
+		int target;
+		ASSERT_ARG(arg, 2);
+		PARSE_STR(target, arg[1], stoi);
+
+		dkvrTrackerRequestLocate(handle, target);
+	}
 	else if (compare(cmd, "calib"))
 	{
-		if (arg.size() < 2)
-		{
-			std::cout << "Missing arguments." << std::endl;
-			return;
-		}
+		ASSERT_ARG(arg, 2);
 
 		std::string& second = arg[1];
 		if (compare(second, "status"))
@@ -236,20 +266,10 @@ void ParseKeyInput()
 		}
 		else if (compare(second, "begin"))
 		{
-			if (arg.size() < 3)
-			{
-				std::cout << "Missing arguments." << std::endl;
-				return;
-			}
 			int target;
-			try
-			{
-				target = stoi(arg[2]);
-			}
-			catch (std::invalid_argument inv_arg)
-			{
-				std::cout << "argument parsing failed." << std::endl;
-			}
+			ASSERT_ARG(arg, 3);
+			PARSE_STR(target, arg[2], stoi);
+
 			dkvrCalibratorBeginWith(handle, target);
 		}
 		else if (compare(second, "continue"))
@@ -263,6 +283,77 @@ void ParseKeyInput()
 		else
 		{
 			std::cout << "Unknown calibrator command." << std::endl;
+		}
+	}
+	else if (compare(cmd, "save")) 
+	{
+		int target;
+		ASSERT_ARG(arg, 4);
+		PARSE_STR(target, arg[2], stoi);
+
+		const void* ptr = nullptr;
+		size_t count = 0;
+		if (compare(arg[1], "calib"))
+		{
+			static Calibration calib;
+			dkvrTrackerGetCalibration(handle, target, &calib);
+			ptr = &calib;
+			count = sizeof Calibration;
+		}
+
+		if (ptr && count) {
+			std::ofstream output(arg[3], std::ios::binary | std::ios::trunc);
+			if (output.is_open())
+			{
+				output.write(reinterpret_cast<const char*>(ptr), count);
+				output.close();
+				std::cout << "Calibration struct saved." << std::endl;
+			} 
+			else
+			{
+				std::cout << "Output file open failed." << std::endl;
+			}
+		}
+		else
+		{
+			std::cout << "Save target is not specified." << std::endl;
+		}
+		
+	}
+	else if (compare(cmd, "load"))
+	{
+		int target;
+		ASSERT_ARG(arg, 4);
+		PARSE_STR(target, arg[2], stoi);
+
+		std::ifstream input(arg[3], std::ios::binary);
+		if (input.is_open())
+		{
+			input.seekg(0, input.end);
+			int size = input.tellg();
+			input.seekg(0, input.beg);
+
+			char* buffer = new char[size];
+			input.read(buffer, size);
+
+			if (compare(arg[1], "calib"))
+			{
+				if (size == sizeof Calibration)
+				{
+					dkvrTrackerSetCalibration(handle, target, reinterpret_cast<Calibration*>(buffer));
+					std::cout << "Calibration struct loaded." << std::endl;
+				}
+				else
+				{
+					std::cout << "filesize is not matching with sizeof Calibration struct." << std::endl;
+				}
+			}
+
+			delete[] buffer;
+		}
+		else
+		{
+			std::cout << "Input file open failed." << std::endl;
 		}
 	}
 	else
@@ -281,11 +372,11 @@ void ReadIMUThreadLoop(int target, int interval)
 		dkvrTrackerGetGyro(handle, target, &gyro);
 		dkvrTrackerGetAccel(handle, target, &accel);
 		dkvrTrackerGetMag(handle, target, &mag);
-
-		std::cout << "Quat  : " << quat.x << "\t" << quat.y << "\t" << quat.z << "\t" << quat.w << std::endl;
-		std::cout << "Gyro  : " << gyro.x << "\t" << gyro.y << "\t" << gyro.z << std::endl;
-		std::cout << "Accel : " << accel.x << "\t" << accel.y << "\t" << accel.z << std::endl;
-		std::cout << "Mag   : " << mag.x << "\t" << mag.y << "\t" << mag.z << std::endl;
+		
+		std::cout << std::setprecision(3) << std::fixed << "Quat  : " << quat.x << "\t" << quat.y << "\t" << quat.z << "\t" << quat.w << std::endl;
+		std::cout << std::setprecision(3) << std::fixed << "Gyro  : " << gyro.x << "\t" << gyro.y << "\t" << gyro.z << std::endl;
+		std::cout << std::setprecision(3) << std::fixed << "Accel : " << accel.x << "\t" << accel.y << "\t" << accel.z << std::endl;
+		std::cout << std::setprecision(3) << std::fixed << "Mag   : " << mag.x << "\t" << mag.y << "\t" << mag.z << std::endl;
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(interval));
 	}
