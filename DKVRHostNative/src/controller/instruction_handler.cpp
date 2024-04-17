@@ -2,8 +2,6 @@
 
 #include "controller/instruction_set.h"
 
-#define DKVR_DEBUG_TRACKER_CONNECTION_DETAIL
-
 namespace dkvr
 {
 	void InstructionHandler::Handle(Tracker* target, Instruction& inst)
