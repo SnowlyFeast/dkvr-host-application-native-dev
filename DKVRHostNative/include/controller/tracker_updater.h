@@ -22,8 +22,8 @@ namespace dkvr {
 		void UpdateTracker();
 
 		void UpdateConnection(Tracker* target);
-		void UpdateHeartbeat(Tracker* target);
-		void UpdateRtt(Tracker* target);
+		void UpdateHeartbeatAndRtt(Tracker* target);
+		void HandleUpdateRequired(Tracker* target);
 		void MatchConfigurationWithClient(Tracker* target);
 
 		std::thread* thread_;

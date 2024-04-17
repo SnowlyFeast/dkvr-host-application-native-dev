@@ -8,8 +8,6 @@
 #include "tracker/tracker.h"
 #include "tracker/atomic_tracker.h"
 
-#define DKVR_DEBUG_TRACKER_CONNECTION_DETAIL	// TOOD: somewhere else
-
 namespace dkvr {
 
 	TrackerProvider& TrackerProvider::GetInstance()

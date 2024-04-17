@@ -63,10 +63,13 @@ namespace dkvr {
 			);
 			return;
 		}
-		target->set_recv_sequence_num(inst.sequence);
 
 		// delegate to controller
 		inst_handle_.Handle(target, inst);
+
+		// update recv_sequence only on connected status
+		if (target->IsConnected())
+			target->set_recv_sequence_num(inst.sequence);
 	}
 
 }	// namespace dkvr

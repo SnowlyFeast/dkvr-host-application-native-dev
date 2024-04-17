@@ -77,6 +77,7 @@ namespace dkvr
 		SampleTypes sample_type_;
 		int target_index_;
 		uint8_t saved_behavior_;
+		Calibration saved_calibration_;
 
 		std::unique_ptr<std::thread> thread_ptr_;
 		std::atomic_bool exit_flag_;

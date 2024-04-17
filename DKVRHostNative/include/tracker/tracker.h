@@ -59,6 +59,7 @@ namespace dkvr {
 		const float* gyro_offset() const { return calib_.gyro_offset; }
 		const float* accel_mat() const { return calib_.accel_mat; }
 		const float* mag_mat() const { return calib_.mag_mat; }
+		Calibration calibration() const { return calib_; }
 
 		void set_behavior(uint8_t behavior) { behavior_.Decode(behavior); InvalidateBehavior(); }
 		void set_active(bool active) { behavior_.active = active; InvalidateBehavior(); }
@@ -93,6 +94,12 @@ namespace dkvr {
 
 		void set_tracker_status(TrackerStatus status) { status_ = status; }
 
+		// etc
+		void RequestStatusUpdate() { status_update_required_ = true; }
+		void RequestLocate() { locate_required_ = true; }
+
+		bool IsStatusUpdateRequired() { bool temp = status_update_required_; status_update_required_ = false; return temp; }
+		bool IsLocateRequired() { bool temp = locate_required_; locate_required_ = false; return temp; }
 		
 	private:
 		void InvalidateBehavior() { validator_.Invalidate(ConfigurationKey::Behavior); }
@@ -106,6 +113,8 @@ namespace dkvr {
 		ConfigurationValidator validator_;
 		IMUReadings readings_;
 		TrackerStatus status_;
+		bool status_update_required_;
+		bool locate_required_;
 		
 	};
 

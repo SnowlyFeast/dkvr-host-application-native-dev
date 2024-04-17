@@ -55,7 +55,8 @@ namespace dkvr {
 			if (!target->IsConnected())
 				continue;
 
-			UpdateHeartbeat(target);
+			UpdateHeartbeatAndRtt(target);
+			HandleUpdateRequired(target);
 			MatchConfigurationWithClient(target);
 		}
 	}
@@ -83,7 +84,7 @@ namespace dkvr {
 
 			if (timeout.count() > kTimeoutInterval) {
 				target->Reset();
-#ifdef DKVR_DEBUG_TRACKER_CONNECTION_DETAIL	// TODO : create some header for DEFINE
+#ifdef DKVR_DEBUG_TRACKER_CONNECTION_DETAIL
 				unsigned long ip = target->address();
 				unsigned char* ptr = reinterpret_cast<unsigned char*>(&ip);
 				logger_.Debug("Tracker timed-out (ip {:d}.{:d}.{:d}.{:d})", ptr[0], ptr[1], ptr[2], ptr[3]);
@@ -94,7 +95,7 @@ namespace dkvr {
 		}
 	}
 
-	void TrackerUpdater::UpdateHeartbeat(Tracker* target)
+	void TrackerUpdater::UpdateHeartbeatAndRtt(Tracker* target)
 	{
 		using namespace std::chrono;
 
@@ -105,18 +106,26 @@ namespace dkvr {
 			net_service_.Send(target->address(), inst);
 			target->UpdateHeartbeatSent();
 		}
-	}
-
-	void TrackerUpdater::UpdateRtt(Tracker* target)
-	{
-		using namespace std::chrono;
-
-		milliseconds duration = duration_cast<milliseconds>(now_ - target->last_ping_sent());
 
 		if (duration.count() >= kRttUpdateInterval) {
 			Instruction inst = BuildInstruction(InstructionSet::Ping, target->send_sequence_num(), nullptr);
 			net_service_.Send(target->address(), inst);
 			target->UpdatePingSent();
+		}
+	}
+
+	void TrackerUpdater::HandleUpdateRequired(Tracker* target)
+	{
+		if (target->IsStatusUpdateRequired())
+		{
+			Instruction inst = BuildInstruction(InstructionSet::Status, target->send_sequence_num(), nullptr);
+			net_service_.Send(target->address(), inst);
+		}
+
+		if (target->IsLocateRequired())
+		{
+			Instruction inst = BuildInstruction(InstructionSet::Locate, target->send_sequence_num(), nullptr);
+			net_service_.Send(target->address(), inst);
 		}
 	}
 

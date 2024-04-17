@@ -39,8 +39,8 @@ namespace dkvr
 
 	CalibrationManager::CalibrationManager() :
 		gyro_calib_(), accel_calib_(), mag_calib_(), status_(CalibrationStatus::StandBy),
-		sample_type_(SampleTypes::NegativeZ), target_index_(-1), saved_behavior_(Behavior::kInvalid), thread_ptr_(nullptr), exit_flag_(false),
-		samples_(), required_size_(0), mag_noise_var_(0.0f), result_{}
+		sample_type_(SampleTypes::NegativeZ), target_index_(-1), saved_behavior_(TrackerBehavior::kInvalid), saved_calibration_{}, thread_ptr_(nullptr), exit_flag_(false),
+		samples_(), required_size_(0), mag_noise_var_(0.0f), result_{}, tk_provider_(tk_provider)
 	{
 		samples_.reserve(kRequiredRotationalSampleSize);
 	}
@@ -87,6 +87,7 @@ namespace dkvr
 			{
 				AtomicTracker target = tk_provider_.FindByIndex(target_index_);
 				target->set_behavior(saved_behavior_);
+				target->set_calibration(saved_calibration_);
 			}
 
 			logger_.Info("Calibration process aborted.");
@@ -194,6 +195,11 @@ namespace dkvr
 			AtomicTracker target = tk_provider_.FindByIndex(target_index_);
 			saved_behavior_ = target->behavior();
 			target->set_behavior(kCalibBehavior.Encode());
+
+			Calibration default_calib{};
+			default_calib.Reset();
+			saved_calibration_ = target->calibration();
+			target->set_calibration(default_calib);
 		}	// must release the tracker to update it's status
 
 		while (!exit_flag_)
@@ -245,7 +251,7 @@ namespace dkvr
 			// record next samples
 			sample_type_ = SampleTypes(static_cast<int>(sample_type_) + 1);
 			status_ = CalibrationStatus::WaitingContinue;
-			logger_.Debug("[Calibration] ({}/9) Sample aquired.", static_cast<int>(sample_type_) + 2);
+			logger_.Debug("[Calibration] ({}/9) Sample aquired.", static_cast<int>(sample_type_) + 1);
 		}
 		else
 		{
@@ -263,9 +269,9 @@ namespace dkvr
 		case SampleTypes::NegativeZ:
 		{
 			Vector3 gyro_result = gyro_calib_.CalculateOffset(samples_);
-			result_.gyro_offset[0] = gyro_result.x;
-			result_.gyro_offset[1] = gyro_result.y;
-			result_.gyro_offset[2] = gyro_result.z;
+			result_.gyro_offset[0] = -gyro_result.x;
+			result_.gyro_offset[1] = -gyro_result.y;
+			result_.gyro_offset[2] = -gyro_result.z;
 
 			accel_calib_.AccumulateSample(AccelCalibrator::Axis::ZNegative, samples_);
 			mag_noise_var_ = mag_calib_.CalculateNoiseVariance(samples_);

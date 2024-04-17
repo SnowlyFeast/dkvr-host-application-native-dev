@@ -10,9 +10,8 @@ namespace dkvr {
 
 	void Tracker::Reset()
 	{
-		connection_ = ConnectionStatus::Disconnected;
-		netstat_ = NetworkStatistics{};
-		calib_.Reset();
+		info_.connection = ConnectionStatus::Disconnected;
+		netstat_ = TrackerNetworkStatistics{ 0, 0, };
 		validator_.InvalidateAll();
 		readings_ = IMUReadings{};
 		status_ = TrackerStatus{};
