@@ -4,9 +4,9 @@ namespace dkvr {
 
 	struct Quaternion
 	{
-		constexpr float& operator[] (int i) { return (i % 2 ? (i == 1 ? y : w) : (i == 0 ? x : z)); }
+		constexpr float& operator[] (int i) { return (i % 2 ? (i == 1 ? x : z) : (i == 0 ? w : y)); }
 
-		float x, y, z, w;
+		float w, x, y, z;
 	};
 
 }	// namespace dkvr

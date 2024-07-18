@@ -27,6 +27,7 @@ namespace dkvr
 		void Reset();
 		void AccumulateSample(Axis axis, const std::vector<IMUReadings>& samples);
 		Matrix CalculateCalibrationMatrix();
+		static Vector3 CalculateNoiseVariance(const std::vector<IMUReadings>& samples, const Matrix& calibration_matrix);
 
 	private:
 		bool accumulated_[6];

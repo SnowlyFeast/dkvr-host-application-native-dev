@@ -25,11 +25,13 @@ namespace dkvr {
 		CalibrationGr	= 0x24,
 		CalibrationAc	= 0x25,
 		CalibrationMg	= 0x26,
+		MagRefRecalc	= 0x27,
 
 		// data transfer op
 		Status			= 0x31,
 		ImuRaw			= 0x32,
-		ImuQuat			= 0x33
+		ImuQuat			= 0x33,
+		Statistic		= 0x34
 	};
 
 	struct InstructionHint
@@ -63,10 +65,12 @@ namespace dkvr {
 		static constexpr InstructionHint CalibrationGr{ Opcode::CalibrationGr, 4,  3, 12 };
 		static constexpr InstructionHint CalibrationAc{ Opcode::CalibrationAc, 4, 12, 48 };
 		static constexpr InstructionHint CalibrationMg{ Opcode::CalibrationMg, 4, 12, 48 };
+		static constexpr InstructionHint MagRefRecalc{ Opcode::MagRefRecalc, 0, 0, 0 };
 
 		static constexpr InstructionHint Status{ Opcode::Status, 0, 0, 0 };
 		static constexpr InstructionHint ImuRaw{ Opcode::ImuRaw, 0, 0, 0 };
 		static constexpr InstructionHint ImuQuat{ Opcode::ImuQuat, 0, 0, 0 };
+		static constexpr InstructionHint Statistic{ Opcode::Statistic, 0, 0, 0 };
 	};
 
 }	// namespace dkvr

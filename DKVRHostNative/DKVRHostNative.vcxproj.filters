@@ -135,6 +135,9 @@
     <ClInclude Include="include\version.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="include\tracker\tracker_statistic.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\math\vector.cpp">

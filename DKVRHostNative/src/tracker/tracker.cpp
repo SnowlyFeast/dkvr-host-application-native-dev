@@ -9,7 +9,11 @@ namespace dkvr {
 		calib_{},
 		validator_(),
 		readings_{},
-		status_{}
+		statistic_{},
+		status_{},
+		statistic_update_required_(false),
+		status_update_required_(false),
+		locate_required_(false)
 	{
 		behavior_.Reset();
 		calib_.Reset();
@@ -21,6 +25,7 @@ namespace dkvr {
 		netstat_ = TrackerNetworkStatistics{ 0, 0, };
 		validator_.InvalidateAll();
 		readings_ = IMUReadings{};
+		statistic_ = TrackerStatistic{};
 		status_ = TrackerStatus{};
 	}
 

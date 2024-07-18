@@ -121,6 +121,12 @@ namespace dkvr {
 
 	void TrackerUpdater::HandleUpdateRequired(Tracker* target)
 	{
+		if (target->IsStatisticUpdateRequired())
+		{
+			Instruction inst = BuildInstruction(InstructionSet::Statistic, target->send_sequence_num(), nullptr);
+			net_service_.Send(target->address(), inst);
+		}
+
 		if (target->IsStatusUpdateRequired())
 		{
 			Instruction inst = BuildInstruction(InstructionSet::Status, target->send_sequence_num(), nullptr);
@@ -130,6 +136,12 @@ namespace dkvr {
 		if (target->IsLocateRequired())
 		{
 			Instruction inst = BuildInstruction(InstructionSet::Locate, target->send_sequence_num(), nullptr);
+			net_service_.Send(target->address(), inst);
+		}
+
+		if (target->IsMagneticRefRecalRequired())
+		{
+			Instruction inst = BuildInstruction(InstructionSet::MagRefRecalc, target->send_sequence_num(), nullptr);
 			net_service_.Send(target->address(), inst);
 		}
 	}

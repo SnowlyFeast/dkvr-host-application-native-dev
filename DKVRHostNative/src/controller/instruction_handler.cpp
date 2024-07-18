@@ -57,6 +57,9 @@ namespace dkvr
 		case Opcode::ImuQuat:
 			ImuQuat(target, inst); break;
 
+		case Opcode::Statistic:
+			Statistic(target, inst); break;
+
 			// unknown opcode
 		default:
 		{
@@ -188,4 +191,15 @@ namespace dkvr
 			));
 		}
 	}
+
+	void InstructionHandler::Statistic(Tracker* target, Instruction& inst)
+	{
+		if (target->IsConnected())
+		{
+			TrackerStatistic statistic{};
+			memcpy(&statistic, inst.payload, sizeof TrackerStatistic);
+			target->set_tracker_statistic(statistic);
+		}
+	}
+
 }

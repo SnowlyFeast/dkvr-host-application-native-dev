@@ -57,6 +57,7 @@ namespace dkvr {
 		Vector3 GetTrackerGyro(int index) const { return FindTrackerAndGet(index, &Tracker::gyro, Vector3{}); }
 		Vector3 GetTrackerAccel(int index) const { return FindTrackerAndGet(index, &Tracker::accel, Vector3{}); }
 		Vector3 GetTrackerMag(int index) const { return FindTrackerAndGet(index, &Tracker::mag, Vector3{}); }
+		int GetTrackerExecutionTime(int index) const { return FindTrackerAndGet(index, &Tracker::execution_time); }
 		int GetTrackerInitResult(int index) const { return FindTrackerAndGet(index, &Tracker::init_result); }
 		int GetTrackerLastError(int index) const { return FindTrackerAndGet(index, &Tracker::last_err); }
 		int GetTrackerBatteryPerc(int index) const { return FindTrackerAndGet(index, &Tracker::battery_perc); }
@@ -66,8 +67,10 @@ namespace dkvr {
 		void SetTrackerLed(int index, bool led) { FindTrackerAndSet(index, &Tracker::set_led, led); }
 		void SetTrackerCalibration(int index, const Calibration& calib) { FindTrackerAndSet(index, &Tracker::set_calibration, calib); }
 
+		void RequestTrackerStatistic(int index) { FindTrackerAndSet(index, &Tracker::RequestStatisticUpdate); }
 		void RequestTrackerStatus(int index) { FindTrackerAndSet(index, &Tracker::RequestStatusUpdate); }
 		void RequestTrackerLocate(int index) { FindTrackerAndSet(index, &Tracker::RequestLocate); }
+		void RequestTrackerMagRefRecalc(int index) { FindTrackerAndSet(index, &Tracker::RequestMagRefRecalc); }
 
 		// calibrator
 		CalibrationManager::CalibrationStatus GetCalibratorStatus() { return calib_manager_.GetStatus(); }
@@ -236,6 +239,7 @@ void __stdcall dkvrTrackerGetMag(DKVRHostHandle handle, int index, Vector3* out)
 	dkvr::Vector3 vec = DKVRHOST(handle)->GetTrackerMag(index);
 	memcpy_s(out, sizeof Vector3, &vec, sizeof dkvr::Vector3);
 }
+void __stdcall dkvrTrackerGetExecutionTime(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerExecutionTime(index); }
 void __stdcall dkvrTrackerGetInitResult(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerInitResult(index); }
 void __stdcall dkvrTrackerGetLastError(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerLastError(index); }
 void __stdcall dkvrTrackerGetBatteryPerc(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerBatteryPerc(index); }
@@ -248,8 +252,10 @@ void __stdcall dkvrTrackerSetCalibration(DKVRHostHandle handle, int index, const
 	DKVRHOST(handle)->SetTrackerCalibration(index, *(reinterpret_cast<const dkvr::Calibration*>(in)));
 }
 
+void __stdcall dkvrTrackerRequestStatistic(DKVRHostHandle handle, int index) { DKVRHOST(handle)->RequestTrackerStatistic(index); }
 void __stdcall dkvrTrackerRequestStatus(DKVRHostHandle handle, int index) { DKVRHOST(handle)->RequestTrackerStatus(index); }
 void __stdcall dkvrTrackerRequestLocate(DKVRHostHandle handle, int index) { DKVRHOST(handle)->RequestTrackerLocate(index); }
+void __stdcall dkvrTrackerRequestMagRefRecalc(DKVRHostHandle handle, int index) { DKVRHOST(handle)->RequestTrackerMagRefRecalc(index); }
 
 // calibrator
 void __stdcall dkvrCalibratorGetStatus(DKVRHostHandle handle, int* out) { *out = static_cast<int>(DKVRHOST(handle)->GetCalibratorStatus()); }

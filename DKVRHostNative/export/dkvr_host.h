@@ -14,7 +14,7 @@ extern "C" {
 
 	typedef void* DKVRHostHandle;
 	typedef struct Vector3_s { float x, y, z; } Vector3;
-	typedef struct Quaternion_s { float x, y, z, w; } Quaternion;
+	typedef struct Quaternion_s { float w, x, y, z; } Quaternion;
 	typedef struct Calibration_s { float gyro[3], accel[12], mag[12]; } Calibration;
 
 	// version
@@ -51,6 +51,7 @@ extern "C" {
 	DLLEXPORT void __stdcall dkvrTrackerGetGyro(DKVRHostHandle handle, int index, Vector3* out);
 	DLLEXPORT void __stdcall dkvrTrackerGetAccel(DKVRHostHandle handle, int index, Vector3* out);
 	DLLEXPORT void __stdcall dkvrTrackerGetMag(DKVRHostHandle handle, int index, Vector3* out);
+	DLLEXPORT void __stdcall dkvrTrackerGetExecutionTime(DKVRHostHandle handle, int index, int* out);
 	DLLEXPORT void __stdcall dkvrTrackerGetInitResult(DKVRHostHandle handle, int index, int* out);
 	DLLEXPORT void __stdcall dkvrTrackerGetLastError(DKVRHostHandle handle, int index, int* out);
 	DLLEXPORT void __stdcall dkvrTrackerGetBatteryPerc(DKVRHostHandle handle, int index, int* out);
@@ -60,8 +61,10 @@ extern "C" {
 	DLLEXPORT void __stdcall dkvrTrackerSetLed(DKVRHostHandle handle, int index, int in);
 	DLLEXPORT void __stdcall dkvrTrackerSetCalibration(DKVRHostHandle handle, int index, const Calibration* in);
 
+	DLLEXPORT void __stdcall dkvrTrackerRequestStatistic(DKVRHostHandle handle, int index);
 	DLLEXPORT void __stdcall dkvrTrackerRequestStatus(DKVRHostHandle handle, int index);
 	DLLEXPORT void __stdcall dkvrTrackerRequestLocate(DKVRHostHandle handle, int index);
+	DLLEXPORT void __stdcall dkvrTrackerRequestMagRefRecalc(DKVRHostHandle handle, int index);
 
 	// calibrator
 	DLLEXPORT void __stdcall dkvrCalibratorGetStatus(DKVRHostHandle handle, int* out);

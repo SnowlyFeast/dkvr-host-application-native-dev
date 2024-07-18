@@ -21,6 +21,8 @@ namespace dkvr
 		/// Requires samples from multiple directions
 		/// </summary>
 		static Matrix CalculateCalibrationMatrix(const std::vector<IMUReadings>& samples, float noise_variance);
+
+		static void CalibrateSamples(std::vector<IMUReadings>& samples);
 	};
 
 }	// namespace dkvr

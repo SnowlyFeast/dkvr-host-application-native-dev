@@ -30,6 +30,7 @@ namespace dkvr {
 		void Status(Tracker* target, Instruction& inst);
 		void ImuRaw(Tracker* target, Instruction& inst);
 		void ImuQuat(Tracker* target, Instruction& inst);
+		void Statistic(Tracker* target, Instruction& inst);
 
 		Logger& logger_ = Logger::GetInstance();
 	};

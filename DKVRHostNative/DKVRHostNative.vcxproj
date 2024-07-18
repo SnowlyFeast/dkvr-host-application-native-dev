@@ -118,6 +118,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)include\;$(ProjectDir)lib\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -153,6 +154,7 @@
     <ClInclude Include="include\controller\instruction_handler.h" />
     <ClInclude Include="include\controller\instruction_format.h" />
     <ClInclude Include="include\controller\tracker_updater.h" />
+    <ClInclude Include="include\tracker\tracker_statistic.h" />
     <ClInclude Include="include\version.h" />
     <ClInclude Include="lib\fmt\chrono.h" />
     <ClInclude Include="lib\fmt\core.h" />

@@ -5,6 +5,7 @@
 #include "tracker/tracker_imu.h"
 #include "tracker/tracker_info.h"
 #include "tracker/tracker_netstat.h"
+#include "tracker/tracker_statistic.h"
 #include "tracker/tracker_status.h"
 
 namespace dkvr {
@@ -83,6 +84,11 @@ namespace dkvr {
 		void set_accel(Vector3 accel) { readings_.acc = accel; }
 		void set_mag(Vector3 mag) { readings_.mag = mag; }
 
+		// tracker statistic
+		uint8_t execution_time() const { return statistic_.execution_time; }
+
+		void set_tracker_statistic(TrackerStatistic statistic) { statistic_ = statistic; }
+
 		// tracker status
 		uint8_t init_result() const { return status_.init_result; }
 		uint8_t last_err() const { return status_.last_err; }
@@ -90,12 +96,16 @@ namespace dkvr {
 
 		void set_tracker_status(TrackerStatus status) { status_ = status; }
 
-		// etc
+		// update request indicator
+		void RequestStatisticUpdate() { statistic_update_required_ = true; }
 		void RequestStatusUpdate() { status_update_required_ = true; }
 		void RequestLocate() { locate_required_ = true; }
+		void RequestMagRefRecalc() { mag_ref_recalc_required_ = true; }
 
+		bool IsStatisticUpdateRequired() { bool temp = statistic_update_required_; statistic_update_required_ = false; return temp; }
 		bool IsStatusUpdateRequired() { bool temp = status_update_required_; status_update_required_ = false; return temp; }
 		bool IsLocateRequired() { bool temp = locate_required_; locate_required_ = false; return temp; }
+		bool IsMagneticRefRecalRequired() { bool temp = mag_ref_recalc_required_; mag_ref_recalc_required_ = false; return temp; }
 		
 	private:
 		void InvalidateBehavior() { validator_.Invalidate(ConfigurationKey::Behavior); }
@@ -107,10 +117,12 @@ namespace dkvr {
 		Calibration calib_;
 		ConfigurationValidator validator_;
 		IMUReadings readings_;
+		TrackerStatistic statistic_;
 		TrackerStatus status_;
+		bool statistic_update_required_;
 		bool status_update_required_;
 		bool locate_required_;
-		
+		bool mag_ref_recalc_required_;
 	};
 
 }	// namespace dkvr
