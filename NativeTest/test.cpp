@@ -10,11 +10,29 @@ std::atomic_bool exit_flag = false;
 // imu reader
 std::atomic_bool imu_read_exit = false;
 std::unique_ptr<std::thread> imu_read_thread(nullptr);
+std::atomic_bool show[4] = { true, true, true, true };
+std::atomic_bool imu_ypr = false;
 
 // protos
 void LoggerCheckingThreadLoop();
 void ParseKeyInput();
 void ReadIMUThreadLoop(int target, int interval);
+
+TEST(Matrix_inverse, inverse_test)
+{
+	dkvr::Matrix test(4, 4);
+	test.Fill();
+	for (int i = 0; i < 4; i++)
+	{
+		test[0][i] = i;
+		test[1][i] = i * 2;
+		test[2][i] = i * 3;
+		test[3][i] = i * 4;
+	}
+
+	dkvr::Matrix result = test.GetInverse();
+}
+
 
 TEST(Struct, size_test)
 {
@@ -105,6 +123,8 @@ void ParseKeyInput()
 	std::cout << "> ";
 	std::string str;
 	std::getline(std::cin, str, '\n');
+	if (str.size() == 0)
+		return;
 
 	std::vector<std::string> arg = split(str, ' ');
 	std::string cmd = arg[0];
@@ -115,16 +135,25 @@ void ParseKeyInput()
 		std::cout << "exit" << std::endl;
 		std::cout << "list" << std::endl;
 		std::cout << "behavior [index] [value]" << std::endl;
+		std::cout << "recalc" << std::endl;
 		std::cout << "imu [index] [interval]" << std::endl;
-		std::cout << "imustop" << std::endl << std::endl;
+		std::cout << "imustop" << std::endl;
+		std::cout << "show [q g a m]" << std::endl;
+		std::cout << "ypr [0/1]" << std::endl;
+		std::cout << std::endl;
+
+		std::cout << "static" << std::endl;
+		std::cout << "static update" << std::endl;
 		std::cout << "status" << std::endl;
 		std::cout << "status update" << std::endl;
 		std::cout << "locate [index]" << std::endl;
+		std::cout << std::endl;
 
 		std::cout << "calib status" << std::endl;
 		std::cout << "calib begin [index]" << std::endl;
 		std::cout << "calib continue" << std::endl;
 		std::cout << "calib abort" << std::endl;
+		std::cout << std::endl;
 
 		std::cout << "save calib [index] [filename]" << std::endl;
 		std::cout << "load calib [index] [filename]" << std::endl;
@@ -182,6 +211,15 @@ void ParseKeyInput()
 		dkvrTrackerSetLed(handle, target, led);
 		std::cout << "Setting " << target << "th tracker's behavior to " << behavior << "." << std::endl;
 	}
+	else if (compare(cmd, "recalc"))
+	{
+		int target;
+		ASSERT_ARG(arg, 2);
+		PARSE_STR(target, arg[1], stoi);
+
+		dkvrTrackerRequestMagRefRecalc(handle, target);
+		std::cout << "Magnetic reference recalculation requested." << std::endl;
+	}
 	else if (compare(cmd, "imu"))
 	{
 		ASSERT_ARG(arg, 3);
@@ -205,6 +243,61 @@ void ParseKeyInput()
 		if (imu_read_thread)
 			imu_read_thread->join();
 		imu_read_thread.reset();
+	}
+	else if (compare(cmd, "show"))
+	{
+		bool q = 0;
+		bool g = 0;
+		bool a = 0;
+		bool m = 0;
+		for (int i = 1; i < arg.size(); i++)
+		{
+			if (compare(arg[i], "q"))
+				q = true;
+			else if (compare(arg[i], "g"))
+				g = true;
+			else if (compare(arg[i], "a"))
+				a = true;
+			else if (compare(arg[i], "m"))
+				m = true;
+		}
+		show[0] = q;
+		show[1] = g;
+		show[2] = a;
+		show[3] = m;
+
+		std::cout << "Now IMU read shows " << (show[0] ? "Q" : "") << (show[1] ? "G" : "") << (show[2] ? "A" : "") << (show[3] ? "M" : "") << std::endl;
+	}
+	else if (compare(cmd, "ypr"))
+	{
+		int enable;
+		ASSERT_ARG(arg, 2);
+		PARSE_STR(enable, arg[1], stoi);
+
+		imu_ypr = enable ? true : false;
+		std::cout << "YPR setting updated." << std::endl;
+	}
+	else if (compare(cmd, "static"))
+	{
+		int count = 0;
+		dkvrTrackerGetCount(handle, &count);
+		if (arg.size() >= 2 && compare(arg[1], "update"))
+		{
+			for (int i = 0; i < count; i++)
+				dkvrTrackerRequestStatistic(handle, i);
+			std::cout << "Tracker statistic update requested." << std::endl;
+		}
+		else
+		{
+			std::cout << "idx\texecution time" << std::endl;
+			std::cout << "-------------------------------------------------------------" << std::endl;
+			for (int i = 0; i < count; i++)
+			{
+				int exec_time;
+				dkvrTrackerGetExecutionTime(handle, i, &exec_time);
+				std::cout << i << '\t' << exec_time << " ms" << std::endl;
+			}
+		}
 	}
 	else if (compare(cmd, "status"))
 	{
@@ -362,6 +455,16 @@ void ParseKeyInput()
 	}
 }
 
+Vector3 CrossProduct(Vector3 lhs, Vector3 rhs) { return Vector3{ lhs.y * rhs.z - lhs.z * rhs.y, lhs.z * rhs.x - lhs.x * rhs.z, lhs.x * rhs.y - lhs.y * rhs.x }; }
+Vector3 EulerRodrigues(Quaternion quat, Vector3 vec)
+{
+	Vector3 vpart{ 2 * quat.x, 2 * quat.y, 2 * quat.z };
+	Vector3 cross1 = CrossProduct(vpart, vec);
+	Vector3 cross2 = CrossProduct(vpart, cross1);
+
+	return Vector3{ vec.x + cross1.x * quat.w + cross2.x, vec.y + cross1.y * quat.w + cross2.y, vec.z + cross1.z * quat.w + cross2.z };
+}
+
 void ReadIMUThreadLoop(int target, int interval)
 {
 	while (!imu_read_exit)
@@ -372,11 +475,54 @@ void ReadIMUThreadLoop(int target, int interval)
 		dkvrTrackerGetGyro(handle, target, &gyro);
 		dkvrTrackerGetAccel(handle, target, &accel);
 		dkvrTrackerGetMag(handle, target, &mag);
-		
-		std::cout << std::setprecision(3) << std::fixed << "Quat  : " << quat.x << "\t" << quat.y << "\t" << quat.z << "\t" << quat.w << std::endl;
-		std::cout << std::setprecision(3) << std::fixed << "Gyro  : " << gyro.x << "\t" << gyro.y << "\t" << gyro.z << std::endl;
-		std::cout << std::setprecision(3) << std::fixed << "Accel : " << accel.x << "\t" << accel.y << "\t" << accel.z << std::endl;
-		std::cout << std::setprecision(3) << std::fixed << "Mag   : " << mag.x << "\t" << mag.y << "\t" << mag.z << std::endl;
+
+		if (imu_ypr)
+		{
+			// roll (x-axis rotation)
+			double sinr_cosp = 2 * (quat.w * quat.x + quat.y * quat.z);
+			double cosr_cosp = 1 - 2 * (quat.x * quat.x + quat.y * quat.y);
+			double roll = std::atan2(sinr_cosp, cosr_cosp);
+
+			// pitch (y-axis rotation)
+			double sinp = std::sqrt(1 + 2 * (quat.w * quat.y - quat.x * quat.z));
+			double cosp = std::sqrt(1 - 2 * (quat.w * quat.y - quat.x * quat.z));
+			double pitch = 2 * std::atan2(sinp, cosp) - 3.1415926535f / 2;
+
+			// yaw (z-axis rotation)
+			double siny_cosp = 2 * (quat.w * quat.z + quat.x * quat.y);
+			double cosy_cosp = 1 - 2 * (quat.y * quat.y + quat.z * quat.z);
+			double yaw = std::atan2(siny_cosp, cosy_cosp);	
+
+			constexpr double kRadToDeg = (180.0 / 3.1415926535);
+			yaw *= kRadToDeg;
+			pitch *= kRadToDeg;
+			roll *= kRadToDeg;
+			std::cout << std::setprecision(3) << std::fixed << "YPR : (" << yaw << ", " << pitch << ", " << roll << ")" << std::endl;
+
+			std::ofstream fout("./ypr.dat", std::ios::trunc);
+			if (fout.is_open())
+			{
+				Vector3 forward = EulerRodrigues(quat, Vector3{ 1, 0, 0 });
+				Vector3 head = EulerRodrigues(quat, Vector3{ 0, 0, -1 });
+
+				fout << forward.x << " " << forward.y << " " << forward.z << " " << head.x << " " << head.y << " " << head.z;
+				fout.close();
+			}
+		}
+		else 
+		{
+			if (show[0])
+				std::cout << std::setprecision(3) << std::fixed << "Quat  : " << quat.x << "\t" << quat.y << "\t" << quat.z << "\t" << quat.w << std::endl;
+
+			if (show[1])
+				std::cout << std::setprecision(3) << std::fixed << "Gyro  : " << gyro.x << "\t" << gyro.y << "\t" << gyro.z << std::endl;
+
+			if (show[2])
+				std::cout << std::setprecision(3) << std::fixed << "Accel : " << accel.x << "\t" << accel.y << "\t" << accel.z << std::endl;
+
+			if (show[3])
+				std::cout << std::setprecision(3) << std::fixed << "Mag   : " << mag.x << "\t" << mag.y << "\t" << mag.z << std::endl;
+		}
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(interval));
 	}
