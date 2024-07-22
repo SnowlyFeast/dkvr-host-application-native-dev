@@ -52,11 +52,12 @@ namespace dkvr {
 		bool GetTrackerAcitve(int index) const { return FindTrackerAndGet(index, &Tracker::active); }
 		bool GetTrackerRaw(int index) const { return FindTrackerAndGet(index, &Tracker::raw); }
 		bool GetTrackerLed(int index) const { return FindTrackerAndGet(index, &Tracker::led); }
-		Calibration GetTrackerCalibration(int index) const { return FindTrackerAndGet(index, &Tracker::calibration, dkvr::Calibration{}); }
+		CalibrationMatrix GetTrackerCalibration(int index) const { return FindTrackerAndGet(index, &Tracker::calibration, dkvr::CalibrationMatrix{}); }
 		Quaternion GetTrackerQuat(int index) const { return FindTrackerAndGet(index, &Tracker::quaternion, Quaternion{}); }
 		Vector3 GetTrackerGyro(int index) const { return FindTrackerAndGet(index, &Tracker::gyro, Vector3{}); }
 		Vector3 GetTrackerAccel(int index) const { return FindTrackerAndGet(index, &Tracker::accel, Vector3{}); }
 		Vector3 GetTrackerMag(int index) const { return FindTrackerAndGet(index, &Tracker::mag, Vector3{}); }
+		int GetTrackerExecutionTime(int index) const { return FindTrackerAndGet(index, &Tracker::execution_time); }
 		int GetTrackerInitResult(int index) const { return FindTrackerAndGet(index, &Tracker::init_result); }
 		int GetTrackerLastError(int index) const { return FindTrackerAndGet(index, &Tracker::last_err); }
 		int GetTrackerBatteryPerc(int index) const { return FindTrackerAndGet(index, &Tracker::battery_perc); }
@@ -64,10 +65,12 @@ namespace dkvr {
 		void SetTrackerActive(int index, bool active) { FindTrackerAndSet(index, &Tracker::set_active, active); }
 		void SetTrackerRaw(int index, bool raw) { FindTrackerAndSet(index, &Tracker::set_raw, raw); }
 		void SetTrackerLed(int index, bool led) { FindTrackerAndSet(index, &Tracker::set_led, led); }
-		void SetTrackerCalibration(int index, const Calibration& calib) { FindTrackerAndSet(index, &Tracker::set_calibration, calib); }
+		void SetTrackerCalibration(int index, const CalibrationMatrix& calib) { FindTrackerAndSet(index, &Tracker::set_calibration, calib); }
 
+		void RequestTrackerStatistic(int index) { FindTrackerAndSet(index, &Tracker::RequestStatisticUpdate); }
 		void RequestTrackerStatus(int index) { FindTrackerAndSet(index, &Tracker::RequestStatusUpdate); }
 		void RequestTrackerLocate(int index) { FindTrackerAndSet(index, &Tracker::RequestLocate); }
+		void RequestTrackerMagRefRecalc(int index) { FindTrackerAndSet(index, &Tracker::RequestMagRefRecalc); }
 
 		// calibrator
 		CalibrationManager::CalibrationStatus GetCalibratorStatus() { return calib_manager_.GetStatus(); }
@@ -157,10 +160,10 @@ namespace dkvr {
 }
 
 // export struct matching assertion
-static_assert(sizeof Calibration == sizeof dkvr::Calibration);
-static_assert(sizeof Calibration::gyro == sizeof dkvr::Calibration::gyro_offset);
-static_assert(sizeof Calibration::accel == sizeof dkvr::Calibration::accel_mat);
-static_assert(sizeof Calibration::mag == sizeof dkvr::Calibration::mag_mat);
+static_assert(sizeof Calibration == sizeof dkvr::CalibrationMatrix);
+static_assert(sizeof Calibration::gyro == sizeof dkvr::CalibrationMatrix::gyr);
+static_assert(sizeof Calibration::accel == sizeof dkvr::CalibrationMatrix::acc);
+static_assert(sizeof Calibration::mag == sizeof dkvr::CalibrationMatrix::mag);
 static_assert(sizeof Quaternion == sizeof dkvr::Quaternion);
 static_assert(sizeof Vector3 == sizeof dkvr::Vector3);
 
@@ -213,8 +216,8 @@ void __stdcall dkvrTrackerGetRaw(DKVRHostHandle handle, int index, int* out) { *
 void __stdcall dkvrTrackerGetLed(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerLed(index); }
 void __stdcall dkvrTrackerGetCalibration(DKVRHostHandle handle, int index, Calibration* out)
 {
-	dkvr::Calibration calib = DKVRHOST(handle)->GetTrackerCalibration(index);
-	memcpy_s(out, sizeof Calibration, &calib, sizeof dkvr::Calibration);
+	dkvr::CalibrationMatrix calib = DKVRHOST(handle)->GetTrackerCalibration(index);
+	memcpy_s(out, sizeof Calibration, &calib, sizeof dkvr::CalibrationMatrix);
 }
 void __stdcall dkvrTrackerGetQuat(DKVRHostHandle handle, int index, Quaternion* out)
 {
@@ -236,6 +239,7 @@ void __stdcall dkvrTrackerGetMag(DKVRHostHandle handle, int index, Vector3* out)
 	dkvr::Vector3 vec = DKVRHOST(handle)->GetTrackerMag(index);
 	memcpy_s(out, sizeof Vector3, &vec, sizeof dkvr::Vector3);
 }
+void __stdcall dkvrTrackerGetExecutionTime(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerExecutionTime(index); }
 void __stdcall dkvrTrackerGetInitResult(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerInitResult(index); }
 void __stdcall dkvrTrackerGetLastError(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerLastError(index); }
 void __stdcall dkvrTrackerGetBatteryPerc(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerBatteryPerc(index); }
@@ -245,11 +249,13 @@ void __stdcall dkvrTrackerSetRaw(DKVRHostHandle handle, int index, int in) { DKV
 void __stdcall dkvrTrackerSetLed(DKVRHostHandle handle, int index, int in) { DKVRHOST(handle)->SetTrackerLed(index, in); }
 void __stdcall dkvrTrackerSetCalibration(DKVRHostHandle handle, int index, const Calibration* in)
 {
-	DKVRHOST(handle)->SetTrackerCalibration(index, *(reinterpret_cast<const dkvr::Calibration*>(in)));
+	DKVRHOST(handle)->SetTrackerCalibration(index, *(reinterpret_cast<const dkvr::CalibrationMatrix*>(in)));
 }
 
+void __stdcall dkvrTrackerRequestStatistic(DKVRHostHandle handle, int index) { DKVRHOST(handle)->RequestTrackerStatistic(index); }
 void __stdcall dkvrTrackerRequestStatus(DKVRHostHandle handle, int index) { DKVRHOST(handle)->RequestTrackerStatus(index); }
 void __stdcall dkvrTrackerRequestLocate(DKVRHostHandle handle, int index) { DKVRHOST(handle)->RequestTrackerLocate(index); }
+void __stdcall dkvrTrackerRequestMagRefRecalc(DKVRHostHandle handle, int index) { DKVRHOST(handle)->RequestTrackerMagRefRecalc(index); }
 
 // calibrator
 void __stdcall dkvrCalibratorGetStatus(DKVRHostHandle handle, int* out) { *out = static_cast<int>(DKVRHOST(handle)->GetCalibratorStatus()); }

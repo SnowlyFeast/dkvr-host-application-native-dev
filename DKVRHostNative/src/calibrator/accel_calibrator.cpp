@@ -4,7 +4,6 @@
 
 #include "math/matrix.h"
 #include "math/vector.h"
-#include "tracker/tracker_imu.h"
 
 namespace dkvr
 {
@@ -15,15 +14,15 @@ namespace dkvr
 		std::fill(samples_avg_, samples_avg_ + 6, Vector3());
 	}
 
-	void AccelCalibrator::AccumulateSample(Axis axis, const std::vector<IMUReadings>& samples)
+	void AccelCalibrator::AccumulateSample(Axis axis, const std::vector<Vector3>& samples)
 	{
 		int idx = static_cast<int>(axis);
 		if (accumulated_[idx])
 			return;
 
 		Vector3& mean = samples_avg_[idx];
-		for (const IMUReadings& s : samples)
-			mean += s.acc;
+		for (const Vector3& s : samples)
+			mean += s;
 		mean /= samples.size();
 
 		accumulated_[idx] = true;
@@ -59,4 +58,5 @@ namespace dkvr
 
 		return result.GetTranspose();	// to row major
 	}
+
 }	// namespace dkvr

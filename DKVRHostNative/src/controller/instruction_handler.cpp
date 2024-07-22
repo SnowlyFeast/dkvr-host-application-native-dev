@@ -57,6 +57,9 @@ namespace dkvr
 		case Opcode::ImuQuat:
 			ImuQuat(target, inst); break;
 
+		case Opcode::Statistic:
+			Statistic(target, inst); break;
+
 			// unknown opcode
 		default:
 		{
@@ -159,21 +162,24 @@ namespace dkvr
 	void InstructionHandler::ImuRaw(Tracker* target, Instruction& inst)
 	{
 		if (target->IsConnected()) {
-			target->set_gyro(Vector3(
+			Vector3 gyro{
 				inst.payload[0].single,
 				inst.payload[1].single,
 				inst.payload[2].single
-			));
-			target->set_accel(Vector3(
+			};
+			Vector3 accel{
 				inst.payload[3].single,
 				inst.payload[4].single,
 				inst.payload[5].single
-			));
-			target->set_mag(Vector3(
+			};
+			Vector3 mag
+			{
 				inst.payload[6].single,
 				inst.payload[7].single,
 				inst.payload[8].single
-			));
+			};
+
+			target->set_imu_readings(gyro, accel, mag);
 		}
 	}
 
@@ -188,4 +194,15 @@ namespace dkvr
 			));
 		}
 	}
+
+	void InstructionHandler::Statistic(Tracker* target, Instruction& inst)
+	{
+		if (target->IsConnected())
+		{
+			TrackerStatistic statistic{};
+			memcpy(&statistic, inst.payload, sizeof TrackerStatistic);
+			target->set_tracker_statistic(statistic);
+		}
+	}
+
 }

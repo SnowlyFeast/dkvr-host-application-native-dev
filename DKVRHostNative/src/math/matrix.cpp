@@ -99,19 +99,45 @@ namespace dkvr {
 
 	Matrix Matrix::GetInverse() const
 	{
-		float det = GetDeterminant();
 #ifndef DKVR_MATH_MAT_ARITHMETIC_NOTHROW
-		if (det == 0)
-			throw std::domain_error("cannot inverse singular matrix.");
+		if (GetDeterminant() == 0.0f)	throw std::domain_error("cannot inverse singular matrix.");
+		if (row_ != column_)			throw std::domain_error("cannot inverse non-square matrix.");
 #endif
-		Matrix cof(row_, column_);
-		for (unsigned long i = 0; i < row_; i++)
-			for (unsigned long j = 0; j < column_; j++)
-				cof[i][j] = GetMinor(i, j).GetDeterminant() * ((i + j) % 2 == 0 ? 1 : -1) / det;
+		// LU decomposition
+		Matrix lu_decom(*this);
+		for (int i = 0; i < row_; i++)
+		{
+			float pivot = lu_decom[i][i];
+			for (int j = i + 1; j < row_; j++)
+				lu_decom[j][i] /= pivot;
 
-		return cof.GetTranspose();
+			for (int j = i + 1; j < row_; j++)
+				for (int k = i + 1; k < row_; k++)
+					lu_decom[j][k] -= lu_decom[j][i] * lu_decom[i][k];
+		}
+
+		// set dst with identity matrix (permutation matrix is identity)
+		Matrix result = Matrix::CreateIdentity(row_);
+
+		// solve LUX = I(n) for X
+		for (int i = 0; i < row_; i++)
+		{
+			// forward substitution to solve 'LY = I' for Y
+			for (int j = 0; j < row_; j++)
+				for (int k = 0; k < j; k++)
+					result[j][i] -= lu_decom[j][k] * result[k][i];
+
+			// back substitution to solve 'UX = Y' for X
+			for (int j = row_ - 1; j >= 0; j--)
+			{
+				for (int k = j + 1; k < row_; k++)
+					result[j][i] -= lu_decom[j][k] * result[k][i];
+				result[j][i] /= lu_decom[j][j];
+			}
+		}
+
+		return result;
 	}
-
 
 	Matrix& Matrix::operator=(const Matrix& mat)
 	{

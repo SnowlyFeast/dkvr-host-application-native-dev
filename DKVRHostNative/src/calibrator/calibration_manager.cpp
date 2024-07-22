@@ -8,17 +8,19 @@
 
 #include "tracker/tracker.h"
 #include "tracker/tracker_configuration.h"
+#include "calibrator/common_calibrator.h"
 
 #define GLUE(x, y)			(x ## y)
 #define CONST_STRING(name)	GLUE(kString, name)
 
 namespace dkvr
 {
-
-	constexpr size_t kRequiredStaticSampleSize = 100;
-	constexpr size_t kRequiredRotationalSampleSize = 300;
+	constexpr size_t kRequiredGyroSampleSize = 1000;
+	constexpr size_t kRequiredAccelSampleSize = 100;
+	constexpr size_t kRequiredMagSampleSize = 300;
+	constexpr float kStaticSampleLinearAccelerationLimit = 0.2f;
+	constexpr float kRotationalSampleMinimumAngle = 3;
 	constexpr std::chrono::milliseconds kValidationInterval(500);
-	constexpr std::chrono::milliseconds kRecordingInterval(50);
 
 	static const std::string kStringStandBy = "Stand By";
 	static const std::string kStringConfiguringTracker = "Configuring Tracker";
@@ -36,10 +38,14 @@ namespace dkvr
 
 	CalibrationManager::CalibrationManager(TrackerProvider& tk_provider) :
 		gyro_calib_(), accel_calib_(), mag_calib_(), status_(CalibrationStatus::StandBy),
-		sample_type_(SampleTypes::NegativeZ), target_index_(-1), saved_behavior_(TrackerBehavior::kInvalid), saved_calibration_{}, thread_ptr_(nullptr), exit_flag_(false),
-		samples_(), required_size_(0), mag_noise_var_(0.0f), result_{}, tk_provider_(tk_provider)
+		sample_type_(SampleTypes::NegativeZ), target_index_(-1), saved_behavior_(TrackerBehavior::kInvalid), saved_calibration_{}, 
+		thread_ptr_(nullptr), exit_flag_(false), gyro_samples_(), accel_samples_(), mag_samples1_(), mag_samples2_(),
+		mag_noise_var_(0.0f), result_matrix_{}, result_noise_var_{}, tk_provider_(tk_provider)
 	{
-		samples_.reserve(kRequiredRotationalSampleSize);
+		gyro_samples_.reserve(kRequiredGyroSampleSize);
+		accel_samples_.reserve(kRequiredAccelSampleSize);
+		mag_samples1_.reserve(kRequiredMagSampleSize);
+		mag_samples2_.reserve(kRequiredGyroSampleSize);
 	}
 
 	void CalibrationManager::Begin(int index)
@@ -175,9 +181,13 @@ namespace dkvr
 
 		exit_flag_ = false;
 
-		samples_.clear();
+		gyro_samples_.clear();
+		accel_samples_.clear();
+		mag_samples1_.clear();
+		mag_samples2_.clear();
 		mag_noise_var_ = 0.0f;
-		result_ = Calibration{};
+		result_matrix_ = CalibrationMatrix{};
+		result_noise_var_ = NoiseVariance{};
 	}
 
 	void CalibrationManager::ConfiguringThreadLoop()
@@ -197,7 +207,7 @@ namespace dkvr
 			saved_behavior_ = target->behavior();
 			target->set_behavior(kCalibBehavior.Encode());
 
-			Calibration default_calib{};
+			CalibrationMatrix default_calib{};
 			default_calib.Reset();
 			saved_calibration_ = target->calibration();
 			target->set_calibration(default_calib);
@@ -222,29 +232,78 @@ namespace dkvr
 	{
 		status_ = CalibrationStatus::RecordingIMU;
 
-		if (sample_type_ == SampleTypes::Rotational)
-			required_size_ = kRequiredRotationalSampleSize;
-		else
-			required_size_ = kRequiredStaticSampleSize;
-		
-		// record
-		samples_.clear();
+		// begin sample record
+		accel_samples_.clear();
 		while (!exit_flag_)
 		{
+			// get IMU readings if updated
+			bool yield = false;
+			IMUReadings readings;
 			{
-				// TODO: steady for axis, rotate for rotational checking logic
 				AtomicTracker target = tk_provider_.FindByIndex(target_index_);
-				samples_.push_back(target->imu_readings());
+				if (target->IsImuReadingsUpdated())
+					readings = target->imu_readings();
+				else
+					yield = true;
+			}
+			if (yield)
+			{
+				std::this_thread::yield();
+				continue;
 			}
 
-			if (samples_.size() >= required_size_)
-				break;
+			// handle by sample type
+			if (sample_type_ != SampleTypes::Rotational)
+			{	
+				// first sample
+				if (accel_samples_.size() == 0)
+				{
+					accel_samples_.push_back(readings.acc);
+					continue;
+				}
 
-			std::this_thread::sleep_for(kRecordingInterval);
+				// check static sample constraint
+				Vector3 diff = readings.acc - accel_samples_.back();
+				if (diff.ToVector().GetEuclidianNorm() > kStaticSampleLinearAccelerationLimit)
+					continue;
+				accel_samples_.push_back(readings.acc);
+				
+				if (sample_type_ == SampleTypes::PositiveX)	// for magnetic variance calculation
+					mag_samples1_.push_back(readings.mag);
+
+				if (accel_samples_.size() >= kRequiredAccelSampleSize)
+					break;
+			}
+			else
+			{	// rotational samples
+
+				// continuously accumulate for gyro calibration
+				if (gyro_samples_.size() < kRequiredGyroSampleSize)
+				{
+					gyro_samples_.push_back(readings.gyr);
+					mag_samples2_.push_back(readings.mag);
+				}
+
+				// first sample
+				if (mag_samples1_.size() == 0)
+				{
+					mag_samples1_.push_back(readings.mag);
+					continue;
+				}
+
+				// check mag minimum rotational constraint
+				float cos = readings.mag.ToVector().GetNormalized() * mag_samples1_.back().ToVector().GetNormalized();
+				if (cos > cosf(kRotationalSampleMinimumAngle))
+					continue;
+				mag_samples1_.push_back(readings.mag);
+
+				if (gyro_samples_.size() >= kRequiredGyroSampleSize && mag_samples1_.size() >= kRequiredMagSampleSize)
+					break;
+			}
 		}
 
 		// aborted
-		if (exit_flag_)
+		if (exit_flag_)	
 			return;
 
 		HandleSamples();
@@ -269,45 +328,54 @@ namespace dkvr
 		switch (sample_type_)
 		{
 		case SampleTypes::NegativeZ:
-		{
-			Vector3 gyro_result = gyro_calib_.CalculateOffset(samples_);
-			result_.gyro_offset[0] = -gyro_result.x;
-			result_.gyro_offset[1] = -gyro_result.y;
-			result_.gyro_offset[2] = -gyro_result.z;
-
-			accel_calib_.AccumulateSample(AccelCalibrator::Axis::ZNegative, samples_);
-			mag_noise_var_ = mag_calib_.CalculateNoiseVariance(samples_);
+			accel_calib_.AccumulateSample(AccelCalibrator::Axis::ZNegative, accel_samples_);
 			break;
-		}
 
 		case SampleTypes::PositiveZ:
-			accel_calib_.AccumulateSample(AccelCalibrator::Axis::ZPositive, samples_);
+			accel_calib_.AccumulateSample(AccelCalibrator::Axis::ZPositive, accel_samples_);
 			break;
 
 		case SampleTypes::NegativeY:
-			accel_calib_.AccumulateSample(AccelCalibrator::Axis::YNegative, samples_);
+			accel_calib_.AccumulateSample(AccelCalibrator::Axis::YNegative, accel_samples_);
 			break;
 
 		case SampleTypes::PositiveY:
-			accel_calib_.AccumulateSample(AccelCalibrator::Axis::YPositive, samples_);
+			accel_calib_.AccumulateSample(AccelCalibrator::Axis::YPositive, accel_samples_);
 			break;
 
 		case SampleTypes::NegativeX:
-			accel_calib_.AccumulateSample(AccelCalibrator::Axis::XNegative, samples_);
+			accel_calib_.AccumulateSample(AccelCalibrator::Axis::XNegative, accel_samples_);
 			break;
 
 		case SampleTypes::PositiveX:
 		{
-			accel_calib_.AccumulateSample(AccelCalibrator::Axis::XPositive, samples_);
-			Matrix accel_result = accel_calib_.CalculateCalibrationMatrix();
-			std::copy_n(accel_result.data(), 12, result_.accel_mat);
+			// calculate gyro calibration matrix and noise variance
+			accel_calib_.AccumulateSample(AccelCalibrator::Axis::XPositive, accel_samples_);
+			Matrix matrix = accel_calib_.CalculateCalibrationMatrix();
+			std::copy_n(matrix.data(), 12, result_matrix_.acc);
+
+			Vector3 noise_var = CommonCalibrator::CalculateNoiseVariance(accel_samples_, matrix);
+			std::copy_n(&noise_var.x, 3, result_noise_var_.acc);
+
+			// caluclate 1-float mag variance
+			mag_noise_var_ = mag_calib_.CalculateNoiseVariance(mag_samples1_);
+			mag_samples1_.clear();
 			break;
 		}
 
 		case SampleTypes::Rotational:
 		{
-			Matrix mag_result = mag_calib_.CalculateCalibrationMatrix(samples_, mag_noise_var_);
-			std::copy_n(mag_result.data(), 12, result_.mag_mat);
+			// calculate mag calibration matrix and noise variance
+			Matrix mag_matrix = mag_calib_.CalculateCalibrationMatrix(mag_samples1_, mag_noise_var_);
+			std::copy_n(mag_matrix.data(), 12, result_matrix_.mag);
+
+			Vector3 mag_noise_var = CommonCalibrator::CalculateNoiseVariance(mag_samples1_, mag_matrix);
+			std::copy_n(&mag_noise_var.x, 3, result_noise_var_.mag);
+
+			// calculate gyro calibration matrix
+			CommonCalibrator::CalibrateSamples(mag_samples2_, mag_matrix);
+			Matrix gyro_matrix = gyro_calib_.CalculateCalibrationMatrix(gyro_samples_, mag_samples2_, 0.01f);	// TODO: pull 0.01f to constant
+			std::copy_n(gyro_matrix.data(), 12, result_matrix_.gyr);
 			break;
 		}
 
@@ -321,7 +389,7 @@ namespace dkvr
 		{
 			AtomicTracker target = tk_provider_.FindByIndex(target_index_);
 			target->set_behavior(saved_behavior_);
-			target->set_calibration(result_);
+			target->set_calibration(result_matrix_);
 		}
 
 		while (!exit_flag_)

@@ -21,13 +21,20 @@ namespace dkvr {
 		bool led;
 	};
 
-	struct Calibration
+	struct CalibrationMatrix
 	{
 		void Reset();
 
-		float gyro_offset[3];
-		float accel_mat[12];
-		float mag_mat[12];
+		float gyr[12];
+		float acc[12];
+		float mag[12];
+	};
+
+	struct NoiseVariance
+	{
+		float gyr[3];
+		float acc[3];
+		float mag[3];
 	};
 
 }	// namespace dkvr

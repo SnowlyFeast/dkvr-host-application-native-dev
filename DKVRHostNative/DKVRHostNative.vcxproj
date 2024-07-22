@@ -118,6 +118,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)include\;$(ProjectDir)lib\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -148,11 +149,13 @@
     <ClInclude Include="export\dkvr_host.h" />
     <ClInclude Include="include\calibrator\accel_calibrator.h" />
     <ClInclude Include="include\calibrator\calibration_manager.h" />
+    <ClInclude Include="include\calibrator\common_calibrator.h" />
     <ClInclude Include="include\calibrator\gyro_calibrator.h" />
     <ClInclude Include="include\calibrator\mag_calibrator.h" />
     <ClInclude Include="include\controller\instruction_handler.h" />
     <ClInclude Include="include\controller\instruction_format.h" />
     <ClInclude Include="include\controller\tracker_updater.h" />
+    <ClInclude Include="include\tracker\tracker_statistic.h" />
     <ClInclude Include="include\version.h" />
     <ClInclude Include="lib\fmt\chrono.h" />
     <ClInclude Include="lib\fmt\core.h" />
@@ -187,6 +190,7 @@
   <ItemGroup>
     <ClCompile Include="src\calibrator\accel_calibrator.cpp" />
     <ClCompile Include="src\calibrator\calibration_manager.cpp" />
+    <ClCompile Include="src\calibrator\common_calibrator.cpp" />
     <ClCompile Include="src\calibrator\gyro_calibrator.cpp" />
     <ClCompile Include="src\calibrator\mag_calibrator.cpp" />
     <ClCompile Include="src\controller\instruction_handler.cpp" />

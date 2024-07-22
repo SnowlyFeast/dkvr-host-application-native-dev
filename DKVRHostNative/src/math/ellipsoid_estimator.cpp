@@ -22,7 +22,7 @@ namespace dkvr {
 		std::vector<EigenPair> eigen_pairs(QRAlgorithm::GetEigenPairs(a_tild));
 
 		Matrix sigma(3, 3);
-		sigma.Fill();
+		sigma.Fill(0);
 		for (unsigned long i = 0; i < 3; i++)
 			sigma[i][i] = sqrt(eigen_pairs[i].eigenvalue);
 
