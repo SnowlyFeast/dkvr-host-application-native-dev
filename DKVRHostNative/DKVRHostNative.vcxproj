@@ -149,6 +149,7 @@
     <ClInclude Include="export\dkvr_host.h" />
     <ClInclude Include="include\calibrator\accel_calibrator.h" />
     <ClInclude Include="include\calibrator\calibration_manager.h" />
+    <ClInclude Include="include\calibrator\common_calibrator.h" />
     <ClInclude Include="include\calibrator\gyro_calibrator.h" />
     <ClInclude Include="include\calibrator\mag_calibrator.h" />
     <ClInclude Include="include\controller\instruction_handler.h" />
@@ -189,6 +190,7 @@
   <ItemGroup>
     <ClCompile Include="src\calibrator\accel_calibrator.cpp" />
     <ClCompile Include="src\calibrator\calibration_manager.cpp" />
+    <ClCompile Include="src\calibrator\common_calibrator.cpp" />
     <ClCompile Include="src\calibrator\gyro_calibrator.cpp" />
     <ClCompile Include="src\calibrator\mag_calibrator.cpp" />
     <ClCompile Include="src\controller\instruction_handler.cpp" />

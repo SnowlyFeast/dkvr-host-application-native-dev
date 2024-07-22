@@ -4,7 +4,6 @@
 
 #include "math/matrix.h"
 #include "math/vector.h"
-#include "tracker/tracker_imu.h"
 
 namespace dkvr
 {
@@ -25,9 +24,8 @@ namespace dkvr
 		AccelCalibrator() : accumulated_{}, samples_avg_{} {};
 
 		void Reset();
-		void AccumulateSample(Axis axis, const std::vector<IMUReadings>& samples);
+		void AccumulateSample(Axis axis, const std::vector<Vector3>& samples);
 		Matrix CalculateCalibrationMatrix();
-		static Vector3 CalculateNoiseVariance(const std::vector<IMUReadings>& samples, const Matrix& calibration_matrix);
 
 	private:
 		bool accumulated_[6];

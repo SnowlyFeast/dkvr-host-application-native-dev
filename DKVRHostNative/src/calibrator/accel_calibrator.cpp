@@ -4,7 +4,6 @@
 
 #include "math/matrix.h"
 #include "math/vector.h"
-#include "tracker/tracker_imu.h"
 
 namespace dkvr
 {
@@ -15,15 +14,15 @@ namespace dkvr
 		std::fill(samples_avg_, samples_avg_ + 6, Vector3());
 	}
 
-	void AccelCalibrator::AccumulateSample(Axis axis, const std::vector<IMUReadings>& samples)
+	void AccelCalibrator::AccumulateSample(Axis axis, const std::vector<Vector3>& samples)
 	{
 		int idx = static_cast<int>(axis);
 		if (accumulated_[idx])
 			return;
 
 		Vector3& mean = samples_avg_[idx];
-		for (const IMUReadings& s : samples)
-			mean += s.acc;
+		for (const Vector3& s : samples)
+			mean += s;
 		mean /= samples.size();
 
 		accumulated_[idx] = true;
@@ -58,32 +57,6 @@ namespace dkvr
 		Matrix result = (raw_trans * raw).GetInverse() * raw_trans * expected;
 
 		return result.GetTranspose();	// to row major
-	}
-
-	Vector3 AccelCalibrator::CalculateNoiseVariance(const std::vector<IMUReadings>& samples, const Matrix& calibration_matrix)
-	{
-		Vector3 mean{ 0 };
-		for (const IMUReadings& s : samples)
-			mean += s.acc;
-		mean /= samples.size();
-
-		Vector3 var{ 0 };
-		for (const IMUReadings& s : samples)
-		{
-			Vector3 diff = s.acc - mean;
-			mean.x += diff.x * diff.x;
-			mean.y += diff.y * diff.y;
-			mean.z += diff.z * diff.z;
-		}
-		var /= samples.size();
-		
-		// transform variance
-		Vector3 result{ 0 };
-		for (int i = 0; i < 3; i++)
-			for (int j = 0; j < 3; j++)
-				result[i] += var[j] * powf(calibration_matrix[i][j], 2);
-
-		return result;
 	}
 
 }	// namespace dkvr

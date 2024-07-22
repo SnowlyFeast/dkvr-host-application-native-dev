@@ -43,24 +43,23 @@ namespace dkvr {
 		led = true;
 	}
 
-	void Calibration::Reset()
+	void CalibrationMatrix::Reset()
 	{
 		/*
-		* identity gyro offset = [ 0  0  0 ]
-		* 
 		* identity calibration matrix =
-		*	[	1.0		0		0		0
-		*		0		1.0		0		0
-		*		0		0		1.0		0	]
+		*	[	1		0		0		0
+		*		0		1		0		0
+		*		0		0		1		0	]
 		*/
 
-		std::fill_n(gyro_offset, 3, 0.0f);
-		std::fill_n(accel_mat, 12, 0.0f);
-		std::fill_n(mag_mat, 12, 0.0f);
+		std::fill_n(gyr, 12, 0.0f);
+		std::fill_n(acc, 12, 0.0f);
+		std::fill_n(mag, 12, 0.0f);
 
 		for (int i = 0; i < 3; i++) {
-			accel_mat[i * 5] = 1.0f;
-			mag_mat[i * 5] = 1.0f;
+			gyr[i * 5] = 1.0f;
+			acc[i * 5] = 1.0f;
+			mag[i * 5] = 1.0f;
 		}
 
 	}

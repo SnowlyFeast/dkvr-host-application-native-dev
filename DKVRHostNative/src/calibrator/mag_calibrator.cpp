@@ -9,33 +9,32 @@
 
 namespace dkvr
 {
-	float MagCalibrator::CalculateNoiseVariance(const std::vector<IMUReadings>& samples)
+	float MagCalibrator::CalculateNoiseVariance(const std::vector<Vector3>& samples)
 	{
-		float mean = 0;
-		for (const IMUReadings& s : samples)
-		{
-			const Vector3& v = s.mag;
-			mean += sqrtf((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
-		}
+		Vector3 mean{ 0 };
+		for (const Vector3& s : samples)
+			mean += s;
 		mean /= samples.size();
 
-		float var = 0;
-		for (const IMUReadings& s : samples)
+		Vector3 var{ 0 };
+		for (const Vector3& s : samples)
 		{
-			const Vector3& v = s.mag;
-			var += powf(sqrtf((v.x * v.x) + (v.y * v.y) + (v.z * v.z)) - mean, 2);
+			Vector3 diff = s - mean;
+			var.x += diff.x * diff.x;
+			var.y += diff.y * diff.y;
+			var.z += diff.z * diff.z;
 		}
 		var /= samples.size();
 
-		return var;
+		return (var.x + var.y + var.z) / 3;
 	}
 
-	Matrix MagCalibrator::CalculateCalibrationMatrix(const std::vector<IMUReadings>& samples, float noise_variance)
+	Matrix MagCalibrator::CalculateCalibrationMatrix(const std::vector<Vector3>& samples, float noise_variance)
 	{
 		std::vector<Vector3> raw;
 		raw.reserve(samples.size());
-		for (const IMUReadings& v : samples)
-			raw.push_back(v.mag);
+		for (const Vector3& v : samples)
+			raw.push_back(v);
 
 		EllipsoidParameter param = EllipsoidEstimator::EstimateEllipsoid(raw, noise_variance);
 

@@ -78,15 +78,18 @@ namespace dkvr
 		SampleTypes sample_type_;
 		int target_index_;
 		uint8_t saved_behavior_;
-		Calibration saved_calibration_;
+		CalibrationMatrix saved_calibration_;
 
 		std::unique_ptr<std::thread> thread_ptr_;
 		std::atomic_bool exit_flag_;
 
-		std::vector<IMUReadings> samples_;
-		size_t required_size_;
+		std::vector<Vector3> gyro_samples_;
+		std::vector<Vector3> accel_samples_;
+		std::vector<Vector3> mag_samples1_;		// to calibrate mag
+		std::vector<Vector3> mag_samples2_;		// to calibrate gyro
 		float mag_noise_var_;
-		Calibration result_;
+		CalibrationMatrix result_matrix_;
+		NoiseVariance result_noise_var_;
 
 		TrackerProvider& tk_provider_;
 		Logger& logger_ = Logger::GetInstance();
