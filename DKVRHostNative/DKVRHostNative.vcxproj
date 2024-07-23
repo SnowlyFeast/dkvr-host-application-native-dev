@@ -165,7 +165,6 @@
     <ClInclude Include="include\controller\instruction_dispatcher.h" />
     <ClInclude Include="include\controller\instruction_set.h" />
     <ClInclude Include="include\tracker\atomic_tracker.h" />
-    <ClInclude Include="include\tracker\tracker_config_validator.h" />
     <ClInclude Include="include\tracker\tracker.h" />
     <ClInclude Include="include\tracker\tracker_imu.h" />
     <ClInclude Include="include\tracker\tracker_info.h" />
@@ -201,7 +200,6 @@
     <ClCompile Include="src\dllmain.cpp" />
     <ClCompile Include="src\tracker\tracker.cpp" />
     <ClCompile Include="src\tracker\tracker_configuration.cpp" />
-    <ClCompile Include="src\tracker\tracker_config_validator.cpp" />
     <ClCompile Include="src\tracker\tracker_provider.cpp" />
     <ClCompile Include="src\util\logger.cpp" />
     <ClCompile Include="src\math\ellipsoid_estimator.cpp" />

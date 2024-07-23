@@ -40,7 +40,7 @@ namespace dkvr
 		gyro_calib_(), accel_calib_(), mag_calib_(), status_(CalibrationStatus::StandBy),
 		sample_type_(SampleTypes::NegativeZ), target_index_(-1), saved_behavior_(TrackerBehavior::kInvalid), saved_calibration_{}, 
 		thread_ptr_(nullptr), exit_flag_(false), gyro_samples_(), accel_samples_(), mag_samples1_(), mag_samples2_(),
-		mag_noise_var_(0.0f), result_matrix_{}, result_noise_var_{}, tk_provider_(tk_provider)
+		mag_noise_var_(0.0f), result_calibration_{}, tk_provider_(tk_provider)
 	{
 		gyro_samples_.reserve(kRequiredGyroSampleSize);
 		accel_samples_.reserve(kRequiredAccelSampleSize);
@@ -186,8 +186,7 @@ namespace dkvr
 		mag_samples1_.clear();
 		mag_samples2_.clear();
 		mag_noise_var_ = 0.0f;
-		result_matrix_ = CalibrationMatrix{};
-		result_noise_var_ = NoiseVariance{};
+		result_calibration_ = CalibrationMatrix{};
 	}
 
 	void CalibrationManager::ConfiguringThreadLoop()
@@ -352,10 +351,10 @@ namespace dkvr
 			// calculate gyro calibration matrix and noise variance
 			accel_calib_.AccumulateSample(AccelCalibrator::Axis::XPositive, accel_samples_);
 			Matrix matrix = accel_calib_.CalculateCalibrationMatrix();
-			std::copy_n(matrix.data(), 12, result_matrix_.acc);
+			std::copy_n(matrix.data(), 12, result_calibration_.acc_transform);
 
 			Vector3 noise_var = CommonCalibrator::CalculateNoiseVariance(accel_samples_, matrix);
-			std::copy_n(&noise_var.x, 3, result_noise_var_.acc);
+			std::copy_n(&noise_var.x, 3, result_calibration_.acc_noise_var);
 
 			// caluclate 1-float mag variance
 			mag_noise_var_ = mag_calib_.CalculateNoiseVariance(mag_samples1_);
@@ -367,15 +366,15 @@ namespace dkvr
 		{
 			// calculate mag calibration matrix and noise variance
 			Matrix mag_matrix = mag_calib_.CalculateCalibrationMatrix(mag_samples1_, mag_noise_var_);
-			std::copy_n(mag_matrix.data(), 12, result_matrix_.mag);
+			std::copy_n(mag_matrix.data(), 12, result_calibration_.mag_transform);
 
 			Vector3 mag_noise_var = CommonCalibrator::CalculateNoiseVariance(mag_samples1_, mag_matrix);
-			std::copy_n(&mag_noise_var.x, 3, result_noise_var_.mag);
+			std::copy_n(&mag_noise_var.x, 3, result_calibration_.mag_noise_var);
 
 			// calculate gyro calibration matrix
 			CommonCalibrator::CalibrateSamples(mag_samples2_, mag_matrix);
 			Matrix gyro_matrix = gyro_calib_.CalculateCalibrationMatrix(gyro_samples_, mag_samples2_, 0.01f);	// TODO: pull 0.01f to constant
-			std::copy_n(gyro_matrix.data(), 12, result_matrix_.gyr);
+			std::copy_n(gyro_matrix.data(), 12, result_calibration_.gyr_transform);
 			break;
 		}
 
@@ -389,7 +388,7 @@ namespace dkvr
 		{
 			AtomicTracker target = tk_provider_.FindByIndex(target_index_);
 			target->set_behavior(saved_behavior_);
-			target->set_calibration(result_matrix_);
+			target->set_calibration(result_calibration_);
 		}
 
 		while (!exit_flag_)

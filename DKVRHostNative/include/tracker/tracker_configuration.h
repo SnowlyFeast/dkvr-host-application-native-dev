@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
 #include "math/vector.h"
 #include "math/matrix.h"
@@ -25,16 +26,40 @@ namespace dkvr {
 	{
 		void Reset();
 
-		float gyr[12];
-		float acc[12];
-		float mag[12];
+		float gyr_transform[12];
+		float acc_transform[12];
+		float mag_transform[12];
+
+		float gyr_noise_var[3];
+		float acc_noise_var[3];
+		float mag_noise_var[3];
 	};
 
-	struct NoiseVariance
+	enum class ConfigurationKey
 	{
-		float gyr[3];
-		float acc[3];
-		float mag[3];
+		Behavior,
+		GyrTransform,
+		AccTransform,
+		MagTransform,
+		NoiseVariance,
+		Size	// keep this member at last, not an actual key
+	};
+
+	class ConfigurationValidator
+	{
+	public:
+		std::vector<ConfigurationKey> GetEveryInvalid() const;
+		bool IsAllValid() const;
+		bool IsValid(ConfigurationKey key) const;
+		void Validate(ConfigurationKey key) { valid_[static_cast<int>(key)] = true; }
+		void Invalidate(ConfigurationKey key) { valid_[static_cast<int>(key)] = false; }
+		void ValidateAll();
+		void InvalidateAll();
+		void InvalidateBehavior() { Invalidate(ConfigurationKey::Behavior); }
+		void InvalidateCalibration();
+
+	private:
+		bool valid_[static_cast<int>(ConfigurationKey::Size)]{};
 	};
 
 }	// namespace dkvr

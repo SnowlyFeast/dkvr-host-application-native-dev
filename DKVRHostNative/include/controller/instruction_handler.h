@@ -23,9 +23,10 @@ namespace dkvr {
 		void Locate(Tracker* target, Instruction& inst);
 
 		void Behavior(Tracker* target, Instruction& inst);
-		void CalibrationGr(Tracker* target, Instruction& inst);
-		void CalibrationAc(Tracker* target, Instruction& inst);
-		void CalibrationMg(Tracker* target, Instruction& inst);
+		void GyrTransform(Tracker* target, Instruction& inst);
+		void AccTransform(Tracker* target, Instruction& inst);
+		void MagTransform(Tracker* target, Instruction& inst);
+		void NoiseVariance(Tracker* target, Instruction& inst);
 
 		void Status(Tracker* target, Instruction& inst);
 		void ImuRaw(Tracker* target, Instruction& inst);

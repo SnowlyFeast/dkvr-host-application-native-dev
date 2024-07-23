@@ -105,14 +105,14 @@ namespace dkvr {
 #endif
 		// LU decomposition
 		Matrix lu_decom(*this);
-		for (int i = 0; i < row_; i++)
+		for (unsigned long i = 0; i < row_; i++)
 		{
 			float pivot = lu_decom[i][i];
-			for (int j = i + 1; j < row_; j++)
+			for (unsigned long j = i + 1; j < row_; j++)
 				lu_decom[j][i] /= pivot;
 
-			for (int j = i + 1; j < row_; j++)
-				for (int k = i + 1; k < row_; k++)
+			for (unsigned long j = i + 1; j < row_; j++)
+				for (unsigned long k = i + 1; k < row_; k++)
 					lu_decom[j][k] -= lu_decom[j][i] * lu_decom[i][k];
 		}
 
@@ -120,17 +120,17 @@ namespace dkvr {
 		Matrix result = Matrix::CreateIdentity(row_);
 
 		// solve LUX = I(n) for X
-		for (int i = 0; i < row_; i++)
+		for (unsigned long i = 0; i < row_; i++)
 		{
 			// forward substitution to solve 'LY = I' for Y
-			for (int j = 0; j < row_; j++)
-				for (int k = 0; k < j; k++)
+			for (unsigned long j = 0; j < row_; j++)
+				for (unsigned long k = 0; k < j; k++)
 					result[j][i] -= lu_decom[j][k] * result[k][i];
 
 			// back substitution to solve 'UX = Y' for X
-			for (int j = row_ - 1; j >= 0; j--)
+			for (unsigned long j = row_ - 1; j >= 0; j--)
 			{
-				for (int k = j + 1; k < row_; k++)
+				for (unsigned long k = j + 1; k < row_; k++)
 					result[j][i] -= lu_decom[j][k] * result[k][i];
 				result[j][i] /= lu_decom[j][j];
 			}

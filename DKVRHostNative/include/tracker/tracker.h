@@ -1,6 +1,5 @@
 #pragma once
 
-#include "tracker/tracker_config_validator.h"
 #include "tracker/tracker_configuration.h"
 #include "tracker/tracker_imu.h"
 #include "tracker/tracker_info.h"
@@ -52,18 +51,14 @@ namespace dkvr {
 		bool active() const { return behavior_.active; }
 		bool raw() const { return behavior_.raw; }
 		bool led() const { return behavior_.led; }
-		const float* gyro_offset() const { return calib_.gyr; }
-		const float* accel_mat() const { return calib_.acc; }
-		const float* mag_mat() const { return calib_.mag; }
 		CalibrationMatrix calibration() const { return calib_; }
-		NoiseVariance noise_variance() const { return noise_var_; }
+		const CalibrationMatrix& calibration_ref() const { return calib_; }
 
-		void set_behavior(uint8_t behavior) { behavior_.Decode(behavior); InvalidateBehavior(); }
-		void set_active(bool active) { behavior_.active = active; InvalidateBehavior(); }
-		void set_raw(bool raw) { behavior_.raw = raw; InvalidateBehavior(); }
-		void set_led(bool led) { behavior_.led = led; InvalidateBehavior(); }
-		void set_calibration(CalibrationMatrix calib) { calib_ = calib; InvalidateCalibration(); }
-		void set_noise_variance(NoiseVariance noise_var) { noise_var_ = noise_var; }
+		void set_behavior(uint8_t behavior) { behavior_.Decode(behavior); validator_.InvalidateBehavior(); }
+		void set_active(bool active) { behavior_.active = active; validator_.InvalidateBehavior(); }
+		void set_raw(bool raw) { behavior_.raw = raw; validator_.InvalidateBehavior(); }
+		void set_led(bool led) { behavior_.led = led; validator_.InvalidateBehavior(); }
+		void set_calibration(CalibrationMatrix calib) { calib_ = calib; validator_.InvalidateCalibration(); }
 
 		// validator
 		std::vector<ConfigurationKey> GetEveryInvalid() const { return validator_.GetEveryInvalid(); }
@@ -108,14 +103,10 @@ namespace dkvr {
 		bool IsMagneticRefRecalRequired() { bool temp = mag_ref_recalc_required_; mag_ref_recalc_required_ = false; return temp; }
 		
 	private:
-		void InvalidateBehavior() { validator_.Invalidate(ConfigurationKey::Behavior); }
-		void InvalidateCalibration();
-
 		TrackerInformation info_;
 		TrackerNetworkStatistics netstat_;
 		TrackerBehavior behavior_;
 		CalibrationMatrix calib_;
-		NoiseVariance noise_var_;
 		ConfigurationValidator validator_;
 		IMUReadings readings_;
 		TrackerStatistic statistic_;

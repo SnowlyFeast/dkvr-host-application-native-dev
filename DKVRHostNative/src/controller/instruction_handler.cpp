@@ -29,23 +29,24 @@ namespace dkvr
 			Locate(target, inst); break;
 
 			// configuration
-		case Opcode::Active:
-			Behavior(target, inst); break;
-
-		case Opcode::Inactive:
-			Behavior(target, inst); break;
-
 		case Opcode::Behavior:
 			Behavior(target, inst); break;
 
-		case Opcode::CalibrationGr:
-			CalibrationGr(target, inst); break;
+		case Opcode::GyrTransform:
+			GyrTransform(target, inst); break;
 
-		case Opcode::CalibrationAc:
-			CalibrationAc(target, inst); break;
+		case Opcode::AccTransform:
+			AccTransform(target, inst); break;
 
-		case Opcode::CalibrationMg:
-			CalibrationMg(target, inst); break;
+		case Opcode::MagTransform:
+			MagTransform(target, inst); break;
+
+		case Opcode::NoiseVariance:
+			NoiseVariance(target, inst); break;
+
+		case Opcode::MagRefRecalc:
+			// TODO: implement MagRefRecalc Handle -> not client side op
+			break;
 
 			// data transfer
 		case Opcode::Status:
@@ -77,7 +78,8 @@ namespace dkvr
 
 	void InstructionHandler::Handshake1(Tracker* target, Instruction& inst)
 	{
-		if (target->IsDisconnected()) {
+		if (target->IsDisconnected()) 
+		{
 			target->SetHandshaked();
 #ifdef DKVR_DEBUG_TRACKER_CONNECTION_DETAIL
 			unsigned long ip = target->address();
@@ -95,7 +97,8 @@ namespace dkvr
 
 	void InstructionHandler::Heartbeat(Tracker* target, Instruction& inst)
 	{
-		if (target->IsHandshaked()) {
+		if (target->IsHandshaked())
+		{
 			target->SetConnected();
 #ifdef DKVR_DEBUG_TRACKER_CONNECTION_DETAIL
 			unsigned long ip = target->address();
@@ -114,7 +117,8 @@ namespace dkvr
 
 	void InstructionHandler::Pong(Tracker* target, Instruction& inst)
 	{
-		target->UpdateRtt();
+		if (target->IsConnected())
+			target->UpdateRtt();
 	}
 
 	void InstructionHandler::Locate(Tracker* target, Instruction& inst)
@@ -125,30 +129,32 @@ namespace dkvr
 
 	void InstructionHandler::Behavior(Tracker* target, Instruction& inst)
 	{
-		if (target->IsConnected()) {
+		if (target->IsConnected())
 			target->Validate(ConfigurationKey::Behavior);
-		}
 	}
 
-	void InstructionHandler::CalibrationGr(Tracker* target, Instruction& inst)
+	void InstructionHandler::GyrTransform(Tracker* target, Instruction& inst)
 	{
-		if (target->IsConnected()) {
-			target->Validate(ConfigurationKey::CalibrationGr);
-		}
+		if (target->IsConnected()) 
+			target->Validate(ConfigurationKey::GyrTransform);
 	}
 
-	void InstructionHandler::CalibrationAc(Tracker* target, Instruction& inst)
+	void InstructionHandler::AccTransform(Tracker* target, Instruction& inst)
 	{
-		if (target->IsConnected()) {
-			target->Validate(ConfigurationKey::CalibrationAc);
-		}
+		if (target->IsConnected()) 
+			target->Validate(ConfigurationKey::AccTransform);
 	}
 
-	void InstructionHandler::CalibrationMg(Tracker* target, Instruction& inst)
+	void InstructionHandler::MagTransform(Tracker* target, Instruction& inst)
 	{
-		if (target->IsConnected()) {
-			target->Validate(ConfigurationKey::CalibrationMg);
-		}
+		if (target->IsConnected()) 
+			target->Validate(ConfigurationKey::MagTransform);
+	}
+
+	void InstructionHandler::NoiseVariance(Tracker* target, Instruction& inst)
+	{
+		if (target->IsConnected()) 
+			target->Validate(ConfigurationKey::NoiseVariance);
 	}
 
 	void InstructionHandler::Status(Tracker* target, Instruction& inst)
@@ -161,37 +167,39 @@ namespace dkvr
 
 	void InstructionHandler::ImuRaw(Tracker* target, Instruction& inst)
 	{
-		if (target->IsConnected()) {
-			Vector3 gyro{
+		if (target->IsConnected()) 
+		{
+			Vector3 gyr{
 				inst.payload[0].single,
 				inst.payload[1].single,
 				inst.payload[2].single
 			};
-			Vector3 accel{
+			Vector3 acc{
 				inst.payload[3].single,
 				inst.payload[4].single,
 				inst.payload[5].single
 			};
-			Vector3 mag
-			{
+			Vector3 mag{
 				inst.payload[6].single,
 				inst.payload[7].single,
 				inst.payload[8].single
 			};
 
-			target->set_imu_readings(gyro, accel, mag);
+			target->set_imu_readings(gyr, acc, mag);
 		}
 	}
 
 	void InstructionHandler::ImuQuat(Tracker* target, Instruction& inst)
 	{
-		if (target->IsConnected()) {
-			target->set_quaternion(Quaternion(
+		if (target->IsConnected()) 
+		{
+			Quaternion quat{
 				inst.payload[0].single,
 				inst.payload[1].single,
 				inst.payload[2].single,
 				inst.payload[3].single
-			));
+			};
+			target->set_quaternion(quat);
 		}
 	}
 

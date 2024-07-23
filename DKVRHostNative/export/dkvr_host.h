@@ -13,9 +13,9 @@ extern "C" {
 #endif
 
 	typedef void* DKVRHostHandle;
-	typedef struct Vector3_s { float x, y, z; } Vector3;
-	typedef struct Quaternion_s { float w, x, y, z; } Quaternion;
-	typedef struct Calibration_s { float gyro[3], accel[12], mag[12]; } Calibration;
+	struct DKVRVector3 { float x, y, z; };
+	struct DKVRQuaternion { float w, x, y, z; };
+	struct DKVRCalibration { float gyr_transform[12], acc_transform[12], mag_transform[12], gyr_noise_var[3], acc_noise_var[3], mag_noise_var[3]; };
 
 	// version
 	DLLEXPORT void __stdcall dkvrVersion(int* out);
@@ -46,11 +46,11 @@ extern "C" {
 	DLLEXPORT void __stdcall dkvrTrackerGetActive(DKVRHostHandle handle, int index, int* out);
 	DLLEXPORT void __stdcall dkvrTrackerGetRaw(DKVRHostHandle handle, int index, int* out);
 	DLLEXPORT void __stdcall dkvrTrackerGetLed(DKVRHostHandle handle, int index, int* out);
-	DLLEXPORT void __stdcall dkvrTrackerGetCalibration(DKVRHostHandle handle, int index, Calibration* out);
-	DLLEXPORT void __stdcall dkvrTrackerGetQuat(DKVRHostHandle handle, int index, Quaternion* out);
-	DLLEXPORT void __stdcall dkvrTrackerGetGyro(DKVRHostHandle handle, int index, Vector3* out);
-	DLLEXPORT void __stdcall dkvrTrackerGetAccel(DKVRHostHandle handle, int index, Vector3* out);
-	DLLEXPORT void __stdcall dkvrTrackerGetMag(DKVRHostHandle handle, int index, Vector3* out);
+	DLLEXPORT void __stdcall dkvrTrackerGetCalibration(DKVRHostHandle handle, int index, struct DKVRCalibration* out);
+	DLLEXPORT void __stdcall dkvrTrackerGetQuat(DKVRHostHandle handle, int index, struct DKVRQuaternion* out);
+	DLLEXPORT void __stdcall dkvrTrackerGetGyro(DKVRHostHandle handle, int index, struct DKVRVector3* out);
+	DLLEXPORT void __stdcall dkvrTrackerGetAccel(DKVRHostHandle handle, int index, struct DKVRVector3* out);
+	DLLEXPORT void __stdcall dkvrTrackerGetMag(DKVRHostHandle handle, int index, struct DKVRVector3* out);
 	DLLEXPORT void __stdcall dkvrTrackerGetExecutionTime(DKVRHostHandle handle, int index, int* out);
 	DLLEXPORT void __stdcall dkvrTrackerGetInitResult(DKVRHostHandle handle, int index, int* out);
 	DLLEXPORT void __stdcall dkvrTrackerGetLastError(DKVRHostHandle handle, int index, int* out);
@@ -59,7 +59,7 @@ extern "C" {
 	DLLEXPORT void __stdcall dkvrTrackerSetActive(DKVRHostHandle handle, int index, int in);
 	DLLEXPORT void __stdcall dkvrTrackerSetRaw(DKVRHostHandle handle, int index, int in);
 	DLLEXPORT void __stdcall dkvrTrackerSetLed(DKVRHostHandle handle, int index, int in);
-	DLLEXPORT void __stdcall dkvrTrackerSetCalibration(DKVRHostHandle handle, int index, const Calibration* in);
+	DLLEXPORT void __stdcall dkvrTrackerSetCalibration(DKVRHostHandle handle, int index, const struct DKVRCalibration* in);
 
 	DLLEXPORT void __stdcall dkvrTrackerRequestStatistic(DKVRHostHandle handle, int index);
 	DLLEXPORT void __stdcall dkvrTrackerRequestStatus(DKVRHostHandle handle, int index);

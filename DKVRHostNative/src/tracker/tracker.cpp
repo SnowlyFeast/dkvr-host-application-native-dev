@@ -46,11 +46,4 @@ namespace dkvr {
 		imu_readings_updated_ = true;
 	}
 
-	void Tracker::InvalidateCalibration()
-	{
-		validator_.Invalidate(ConfigurationKey::CalibrationGr);
-		validator_.Invalidate(ConfigurationKey::CalibrationAc);
-		validator_.Invalidate(ConfigurationKey::CalibrationMg);
-	}
-
 }	// namespace dkvr
