@@ -242,7 +242,7 @@ namespace dkvr {
 				else if (peak >= 3)
 					DecreaseDelay(delay);
 
-				//logger_.Debug("Thread delay : {}ms", delay);
+				//logger_.Debug("Thread delay : {}ms", delay); TODO: delete this shit
 				std::this_thread::sleep_for(delay);
 			}
 		}

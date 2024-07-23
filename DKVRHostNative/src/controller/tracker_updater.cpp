@@ -160,16 +160,20 @@ namespace dkvr {
 					break;
 				}
 
-				case ConfigurationKey::CalibrationGr:
-					inst = BuildInstruction(InstructionSet::CalibrationGr, target->send_sequence_num(), target->gyro_offset());
+				case ConfigurationKey::GyrTransform:
+					inst = BuildInstruction(InstructionSet::CalibrationGr, target->send_sequence_num(), target->calibration_ref().gyr_transform);
 					break;
 
-				case ConfigurationKey::CalibrationAc:
-					inst = BuildInstruction(InstructionSet::CalibrationAc, target->send_sequence_num(), target->accel_mat());
+				case ConfigurationKey::AccTransform:
+					inst = BuildInstruction(InstructionSet::CalibrationAc, target->send_sequence_num(), target->calibration_ref().acc_transform);
 					break;
 
-				case ConfigurationKey::CalibrationMg:
-					inst = BuildInstruction(InstructionSet::CalibrationMg, target->send_sequence_num(), target->mag_mat());
+				case ConfigurationKey::MagTransform:
+					inst = BuildInstruction(InstructionSet::CalibrationMg, target->send_sequence_num(), target->calibration_ref().mag_transform);
+					break;
+
+				case ConfigurationKey::NoiseVariance:
+					inst = BuildInstruction(InstructionSet::NoiseVariance, target->send_sequence_num(), target->calibration_ref().gyr_noise_var);
 					break;
 
 				default:
@@ -186,13 +190,13 @@ namespace dkvr {
 		Instruction inst
 		{
 			.header = kHeaderValue,
-			.length = hint.length,
+			.length = hint.length(),
 			.align = hint.align,
 			.opcode = static_cast<uint8_t>(hint.opcode),
 			.sequence = seq
 		};
 		if (payload != nullptr)
-			memcpy_s(inst.payload, sizeof(Instruction::payload), payload, hint.length);
+			memcpy_s(inst.payload, sizeof(Instruction::payload), payload, hint.length());
 
 		return inst;
 	}

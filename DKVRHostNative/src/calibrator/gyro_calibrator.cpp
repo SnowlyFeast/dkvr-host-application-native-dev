@@ -73,10 +73,10 @@ namespace dkvr
 									   old_mag.z * p2 * gyro.z - old_mag.y * p3 * gyro.z,
 									   old_mag.z * p2		   - old_mag.y * p3,
 
-			-old_mag.z * p1 * gyro.x + old_mag.x * p3 * gyro.x,
-			-old_mag.z * p1 * gyro.y + old_mag.x * p3 * gyro.y,
-			-old_mag.z * p1 * gyro.z + old_mag.x * p3 * gyro.z,
-			-old_mag.z * p1			 + old_mag.x * p3,
+			-old_mag.z * p1 * gyro.x						   + old_mag.x * p3 * gyro.x,
+			-old_mag.z * p1 * gyro.y						   + old_mag.x * p3 * gyro.y,
+			-old_mag.z * p1 * gyro.z						   + old_mag.x * p3 * gyro.z,
+			-old_mag.z * p1									   + old_mag.x * p3,
 
 			 old_mag.y * p1 * gyro.x - old_mag.x * p2 * gyro.x,
 			 old_mag.y * p1 * gyro.y - old_mag.x * p2 * gyro.y,

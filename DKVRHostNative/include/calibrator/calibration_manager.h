@@ -88,8 +88,7 @@ namespace dkvr
 		std::vector<Vector3> mag_samples1_;		// to calibrate mag
 		std::vector<Vector3> mag_samples2_;		// to calibrate gyro
 		float mag_noise_var_;
-		CalibrationMatrix result_matrix_;
-		NoiseVariance result_noise_var_;
+		CalibrationMatrix result_calibration_;
 
 		TrackerProvider& tk_provider_;
 		Logger& logger_ = Logger::GetInstance();
