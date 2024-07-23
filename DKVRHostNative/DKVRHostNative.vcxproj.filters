@@ -108,9 +108,6 @@
     <ClInclude Include="include\controller\instruction_format.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="include\tracker\tracker_config_validator.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="include\controller\tracker_updater.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -189,9 +186,6 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="src\util\string_parser.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="src\tracker\tracker_config_validator.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="src\controller\tracker_updater.cpp">
