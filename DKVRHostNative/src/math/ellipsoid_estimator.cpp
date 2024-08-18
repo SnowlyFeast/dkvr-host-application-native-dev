@@ -23,7 +23,8 @@ namespace dkvr {
 		if (solver.info() != Eigen::Success)
 			return Eigen::Matrix3f{ {1, 0, 0}, {0, 1, 0}, {0, 0, 1} };
 
-		return solver.eigenvectors() * solver.eigenvalues().array().sqrt().matrix() * solver.eigenvectors().transpose();
+		Eigen::Matrix3f sqrt_eigen_values = solver.eigenvalues().array().sqrt().matrix().asDiagonal();
+		return solver.eigenvectors() * sqrt_eigen_values * solver.eigenvectors().transpose();
 	}
 
 
