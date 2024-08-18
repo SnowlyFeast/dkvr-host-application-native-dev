@@ -170,10 +170,6 @@ namespace dkvr {
 					inst = BuildInstruction(InstructionSet::NoiseVariance, target->send_sequence_num(), target->calibration_ref().gyr_noise_var);
 					break;
 
-				case ConfigurationKey::MagReference:
-					inst = BuildInstruction(InstructionSet::MagReference, target->send_sequence_num(), target->mag_reference());
-					break;
-
 				default:
 				case ConfigurationKey::Size:
 					continue;
@@ -187,7 +183,7 @@ namespace dkvr {
 	{
 		Instruction inst
 		{
-			.header = kHeaderValue,
+			.header = kOpenerValue,
 			.length = hint.length(),
 			.align = hint.align,
 			.opcode = static_cast<uint8_t>(hint.opcode),
