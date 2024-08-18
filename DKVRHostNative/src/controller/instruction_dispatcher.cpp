@@ -47,7 +47,7 @@ namespace dkvr {
 		unsigned char* ip = reinterpret_cast<unsigned char*>(&address);
 
 		// check header value
-		if (inst.header != kHeaderValue) 
+		if (inst.header != kOpenerValue) 
 		{
 			logger_.Error("Wrong header value({:X}) from {:d}.{:d}.{:d}.{:d}", inst.header, ip[0], ip[1], ip[2], ip[3]);
 			return;
