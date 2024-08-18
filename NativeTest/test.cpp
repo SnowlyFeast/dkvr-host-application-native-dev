@@ -119,7 +119,6 @@ void ParseKeyInput()
 		std::cout << "exit" << std::endl;
 		std::cout << "list" << std::endl;
 		std::cout << "behavior [index] [value]" << std::endl;
-		std::cout << "recalc" << std::endl;
 		std::cout << "imu [index] [interval]" << std::endl;
 		std::cout << "imustop" << std::endl;
 		std::cout << "show [q g a m]" << std::endl;
@@ -194,15 +193,6 @@ void ParseKeyInput()
 		dkvrTrackerSetRaw(handle, target, raw);
 		dkvrTrackerSetLed(handle, target, led);
 		std::cout << "Setting " << target << "th tracker's behavior to " << behavior << "." << std::endl;
-	}
-	else if (compare(cmd, "recalc"))
-	{
-		int target;
-		ASSERT_ARG(arg, 2);
-		PARSE_STR(target, arg[1], stoi);
-
-		dkvrTrackerRequestMagRefRecalc(handle, target);
-		std::cout << "Magnetic reference recalculation requested." << std::endl;
 	}
 	else if (compare(cmd, "imu"))
 	{
@@ -295,15 +285,14 @@ void ParseKeyInput()
 		}
 		else
 		{
-			std::cout << "idx\tinit\tlast error\tbattery %" << std::endl;
+			std::cout << "idx\tinit\tbattery %" << std::endl;
 			std::cout << "-------------------------------------------------------------" << std::endl;
 			for (int i = 0; i < count; i++)
 			{
-				int init, last_err, battery_perc;
+				int init, battery_perc;
 				dkvrTrackerGetInitResult(handle, i, &init);
-				dkvrTrackerGetLastError(handle, i, &last_err);
 				dkvrTrackerGetBatteryPerc(handle, i, &battery_perc);
-				std::cout << i << '\t' << std::hex << (bool)init << '\t' << last_err << "\t\t" << std::dec << battery_perc << std::endl;
+				std::cout << i << '\t' << std::hex << (bool)init << '\t' << std::dec << battery_perc << std::endl;
 			}
 		}
 	}
@@ -459,7 +448,7 @@ void ReadIMUThreadLoop(int target, int interval)
 	{
 		DKVRQuaternion quat{};
 		DKVRVector3 gyro{}, accel{}, mag{};
-		dkvrTrackerGetQuat(handle, target, &quat);
+		dkvrTrackerGetOrientation(handle, target, &quat);
 		dkvrTrackerGetGyro(handle, target, &gyro);
 		dkvrTrackerGetAccel(handle, target, &accel);
 		dkvrTrackerGetMag(handle, target, &mag);
