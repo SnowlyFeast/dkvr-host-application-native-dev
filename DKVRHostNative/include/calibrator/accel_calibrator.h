@@ -2,34 +2,32 @@
 
 #include <vector>
 
-#include "math/matrix.h"
-#include "math/vector.h"
+#include "Eigen/Core"
+
+#include "calibrator/calibrator.h"
+#include "calibrator/type.h"
+#include "tracker/tracker_data.h"
 
 namespace dkvr
 {
 	
-	class AccelCalibrator
+	class AccelCalibrator : public Calibrator
 	{
 	public:
-		enum class Axis
-		{
-			XPositive,
-			XNegative,
-			YPositive,
-			YNegative,
-			ZPositive,
-			ZNegative
-		};
-		
-		AccelCalibrator() : accumulated_{}, samples_avg_{} {};
+		AccelCalibrator() : accumulated_{}, samples_avg_{}, result_(), noise_var_() {};
 
-		void Reset();
-		void AccumulateSample(Axis axis, const std::vector<Vector3>& samples);
-		Matrix CalculateCalibrationMatrix();
+		void Reset() override;
+		void Accumulate(SampleType type, const std::vector<RawDataSet>& samples) override;
+		void Calculate() override;
+
+		CalibrationMatrix GetCalibrationMatrix() override { return result_; }
+		Eigen::Vector3f GetNoiseVairance() override { return noise_var_; }
 
 	private:
 		bool accumulated_[6];
-		Vector3 samples_avg_[6];
+		Eigen::Vector3f samples_avg_[6];
+		CalibrationMatrix result_;
+		Eigen::Vector3f noise_var_;
 	};
 
 }	// namespace dkvr

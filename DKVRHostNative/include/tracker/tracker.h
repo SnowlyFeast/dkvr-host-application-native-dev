@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tracker/tracker_configuration.h"
-#include "tracker/tracker_imu.h"
+#include "tracker/tracker_data.h"
 #include "tracker/tracker_info.h"
 #include "tracker/tracker_netstat.h"
 #include "tracker/tracker_statistic.h"
@@ -12,9 +12,34 @@ namespace dkvr {
 	class Tracker
 	{
 	public:
-		Tracker(unsigned long address);
+		Tracker(unsigned long address) :
+			info_{ .address = address, .name = "unknown tracker", .connection = ConnectionStatus::Disconnected },
+			netstat_{},
+			status_{},
+			statistic_{},
+			behavior_{},
+			calib_{},
+			validator_(),
+			data_{}
+		{
+			behavior_.Reset();
+			calib_.Reset();
+		}
 
-		void Reset();
+		void Reset()
+		{
+			info_.connection = ConnectionStatus::Disconnected;
+			netstat_ = TrackerNetworkStatistics{ 0, 0, };
+			status_ = TrackerStatus{};
+			statistic_ = TrackerStatistic{};
+			validator_.InvalidateAll();
+			data_ = TrackerData{};
+			raw_data_updated_ = false;
+			orientation_updated_ = false;
+			statistic_update_required_ = false;
+			status_update_required_ = false;
+			locate_required_ = false;
+		}
 
 		// tracker information
 		unsigned long address() const { return info_.address; }
@@ -44,21 +69,46 @@ namespace dkvr {
 		void UpdateHeartbeatSent() { netstat_.last_heartbeat_sent = std::chrono::steady_clock::now(); }
 		void UpdateHeartbeatRecv() { netstat_.last_heartbeat_recv = std::chrono::steady_clock::now(); }
 		void UpdatePingSent() { netstat_.last_ping_sent = std::chrono::steady_clock::now(); }
-		void UpdateRtt();
+		void UpdateRtt()
+		{
+			using namespace std::chrono;
+			nanoseconds rtt = steady_clock::now() - netstat_.last_ping_sent;
+			netstat_.rtt = duration_cast<milliseconds>(rtt);
+		}
 
-		// configuration
+		// tracker status
+		uint8_t init_result() const { return status_.init_result; }
+		uint8_t battery_perc() const { return status_.battery_level; }
+
+		void set_tracker_status(TrackerStatus status) { status_ = status; }
+
+		// tracker statistic
+		uint8_t execution_time() const { return statistic_.execution_time; }
+		uint8_t interrupt_miss_rate() const { return statistic_.interrupt_miss_rate; }
+		uint8_t imu_miss_rate() const { return statistic_.imu_miss_rate; }
+
+		void set_tracker_statistic(TrackerStatistic statistic) { statistic_ = statistic; }
+
+		// behavior
 		uint8_t behavior() const { return behavior_.Encode(); }
 		bool active() const { return behavior_.active; }
 		bool raw() const { return behavior_.raw; }
 		bool led() const { return behavior_.led; }
-		CalibrationMatrix calibration() const { return calib_; }
-		const CalibrationMatrix& calibration_ref() const { return calib_; }
 
 		void set_behavior(uint8_t behavior) { behavior_.Decode(behavior); validator_.InvalidateBehavior(); }
 		void set_active(bool active) { behavior_.active = active; validator_.InvalidateBehavior(); }
 		void set_raw(bool raw) { behavior_.raw = raw; validator_.InvalidateBehavior(); }
 		void set_led(bool led) { behavior_.led = led; validator_.InvalidateBehavior(); }
-		void set_calibration(CalibrationMatrix calib) { calib_ = calib; validator_.InvalidateCalibration(); }
+
+		// calibration
+		TrackerCalibration calibration() const { return calib_; }
+		const float* gyro_transform() const { return calib_.gyr_transform; }
+		const float* accel_transform() const { return calib_.acc_transform; }
+		const float* mag_transform() const { return calib_.mag_transform; }
+		const float* noise_variance() const { return calib_.gyr_noise_var; }
+		const TrackerCalibration& calibration_ref() const { return calib_; }
+
+		void set_calibration(TrackerCalibration calib) { calib_ = calib; validator_.InvalidateCalibration(); }
 
 		// validator
 		std::vector<ConfigurationKey> GetEveryInvalid() const { return validator_.GetEveryInvalid(); }
@@ -68,54 +118,45 @@ namespace dkvr {
 		void InvalidateAll() { validator_.InvalidateAll(); }
 		void Validate(ConfigurationKey key) { validator_.Validate(key); }
 
-		// IMU readings
-		Quaternion quaternion() const { return readings_.quat; }
-		Vector3 gyro() const { return readings_.gyr; }
-		Vector3 accel() const { return readings_.acc; }
-		Vector3 mag() const { return readings_.mag; }
-		IMUReadings imu_readings() const { return readings_; }
-		bool IsImuReadingsUpdated() { bool temp = imu_readings_updated_; imu_readings_updated_ = false; return temp; }
+		// tracker data
+		Quaternionf orientation() const { return data_.orientation; }
+		RawDataSet raw_data() const { return data_.raw; }
+		Vector3f gyro() const { return data_.raw.gyr; }
+		Vector3f accel() const { return data_.raw.acc; }
+		Vector3f mag() const { return data_.raw.mag; }
 
-		void set_quaternion(Quaternion quat) { readings_.quat = quat; imu_readings_updated_ = true; }
-		void set_imu_readings(Vector3 gyro, Vector3 accel, Vector3 mag);
+		TrackerData tracker_data() const { return data_; }
+		bool IsRawDataUpdated() { bool temp = raw_data_updated_; raw_data_updated_ = false; return temp; }
+		bool IsOrientationUpdated() { bool temp = orientation_updated_; orientation_updated_ = false; return temp; }
 
-		// tracker statistic
-		uint8_t execution_time() const { return statistic_.execution_time; }
-
-		void set_tracker_statistic(TrackerStatistic statistic) { statistic_ = statistic; }
-
-		// tracker status
-		uint8_t init_result() const { return status_.init_result; }
-		uint8_t last_err() const { return status_.last_err; }
-		uint8_t battery_perc() const { return status_.battery_perc; }
-
-		void set_tracker_status(TrackerStatus status) { status_ = status; }
+		void set_orientation(Quaternionf quat) { data_.orientation = quat; orientation_updated_ = true; }
+		void set_raw_data(RawDataSet raw) { data_.raw = raw; raw_data_updated_ = true; }
 
 		// update request indicator
 		void RequestStatisticUpdate() { statistic_update_required_ = true; }
 		void RequestStatusUpdate() { status_update_required_ = true; }
 		void RequestLocate() { locate_required_ = true; }
-		void RequestMagRefRecalc() { mag_ref_recalc_required_ = true; }
 
 		bool IsStatisticUpdateRequired() { bool temp = statistic_update_required_; statistic_update_required_ = false; return temp; }
 		bool IsStatusUpdateRequired() { bool temp = status_update_required_; status_update_required_ = false; return temp; }
 		bool IsLocateRequired() { bool temp = locate_required_; locate_required_ = false; return temp; }
-		bool IsMagneticRefRecalRequired() { bool temp = mag_ref_recalc_required_; mag_ref_recalc_required_ = false; return temp; }
 		
 	private:
 		TrackerInformation info_;
 		TrackerNetworkStatistics netstat_;
-		TrackerBehavior behavior_;
-		CalibrationMatrix calib_;
-		ConfigurationValidator validator_;
-		IMUReadings readings_;
-		TrackerStatistic statistic_;
 		TrackerStatus status_;
-		bool imu_readings_updated_;
-		bool statistic_update_required_;
-		bool status_update_required_;
-		bool locate_required_;
-		bool mag_ref_recalc_required_;
+		TrackerStatistic statistic_;
+		TrackerBehavior behavior_;
+		TrackerCalibration calib_;
+		ConfigurationValidator validator_;
+		TrackerData data_;
+
+		bool raw_data_updated_ = false;
+		bool orientation_updated_ = false;
+
+		bool statistic_update_required_ = false;
+		bool status_update_required_ = false;
+		bool locate_required_ = false;
 	};
 
 }	// namespace dkvr

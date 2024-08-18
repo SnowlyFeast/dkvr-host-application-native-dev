@@ -4,25 +4,56 @@
 #include <random>
 #include <vector>
 
-#include "math/vector.h"
-#include "math/matrix.h"
+#include "Eigen/Dense"
+
+#include "calibrator/common_calibrator.h"
+#include "tracker/tracker_data.h"
 
 namespace dkvr
 {
-
-	Matrix GyroCalibrator::CalculateCalibrationMatrix(const std::vector<Vector3>& gyro_samples, const std::vector<Vector3>& mag_samples, float time_step)
+	
+	void GyroCalibrator::Reset()
 	{
-		// reset
-		calibration_matrix_.Fill(0);
-		for (int i = 0; i < 3; i++)
-			calibration_matrix_[i][i] = 1.0f;
-		gradient_.Fill(0);
+		result_.transform.setIdentity();
+		result_.offset.setZero();
+	}
+
+	void GyroCalibrator::Accumulate(SampleType type, const std::vector<RawDataSet>& samples)
+	{
+		constexpr size_t limit = 300;
+
+		// calculate noise variance once
+		if (type == SampleType::XPositive)
+		{
+			size_t size = std::min(limit, samples.size());
+
+			std::vector<Eigen::Vector3f> vec;
+			vec.reserve(size);
+			for (int i = 0; i < size; i++)
+				vec.emplace_back(samples[i].gyr[0], samples[i].gyr[1], samples[i].gyr[2]);
+
+			noise_var_ = CommonCalibrator::CalculateNoiseVariance(vec);
+		}
+		// only interested with rotational samples
+		else if (type == SampleType::Rotational)
+		{
+			Reset();
+			RunGradientDescent(samples);
+
+			// transform noise variance
+			CommonCalibrator::TransformNoiseVariance(noise_var_, result_);
+		}
+	}
+
+	void GyroCalibrator::RunGradientDescent(const std::vector<RawDataSet>& samples)
+	{
+		int sample_size = samples.size() - 1;
 
 		// create sample set
-		int sample_size = std::min(gyro_samples.size(), mag_samples.size());
 		std::vector<SampleTuple> sample_set;
-		for (int i = 1; i < sample_size; i++)
-			sample_set.push_back(SampleTuple{ gyro_samples[i], mag_samples[i - 1], mag_samples[i] });
+		sample_set.reserve(sample_size);
+		for (int i = 0; i < sample_size; i++)
+			sample_set.emplace_back(samples[i + 1].gyr, samples[i].mag, samples[i + 1].mag);
 
 		// iterate
 		std::default_random_engine rng = std::default_random_engine{};
@@ -32,60 +63,45 @@ namespace dkvr
 			std::shuffle(sample_set.begin(), sample_set.end(), rng);
 
 			// stochastic gradient descendent
-			for (int idx = 1; idx < sample_size; idx += batch_size_)
+			for (int idx = 0; idx < sample_size; idx += batch_size_)
 			{
 				// get gradient of batch
-				gradient_.Fill(0);
+				gradient_.setZero();
 				int count = std::min(batch_size_, sample_size - idx);
 				for (int inc = 0; inc < count; inc++)
-				{
-					SampleTuple& target = sample_set[idx + inc];
-					AddGradient(target.gyro, target.old_mag, target.new_mag, time_step);	// not averaged
-				}
+					AddGradient(sample_set[idx + inc]);	// not averaged
+				gradient_ *= (learn_rate_ / count);
 
 				// apply gradient
-				for (int i = 0; i < 3; i++)
-					for (int j = 0; j < 4; j++)
-						calibration_matrix_[i][j] -= learn_rate_ * gradient_[i * 4 + j] / count;
+				Eigen::Matrix<float, 3, 4> result = gradient_.reshaped<Eigen::AutoOrder>(3, 4);
+				result_.transform += result.topLeftCorner<3, 3>();
+				result_.offset += result.col(3);
 			}
 		}
-
-		return calibration_matrix_;
 	}
 
-	void GyroCalibrator::AddGradient(const Vector3& gyro, const Vector3& old_mag, const Vector3& new_mag, float time_step)
+	void GyroCalibrator::AddGradient(const SampleTuple& tuple)
 	{
-		Vector3 calibrated{ 0 };
-		for (int i = 0; i < 3; i++) {
-			for (int j = 0; j < 3; j++)
-				calibrated[i] += calibration_matrix_[i][j] * gyro[j];
-			calibrated[i] += calibration_matrix_[i][3];
-			calibrated[i] *= time_step;
-		}
-
-		float p1 =  old_mag.x				 - old_mag.z * calibrated.y + old_mag.y * calibrated.z - new_mag.x;
-		float p2 =  old_mag.z * calibrated.x + old_mag.y				- old_mag.x * calibrated.z - new_mag.y;
-		float p3 = -old_mag.y * calibrated.x + old_mag.x * calibrated.y + old_mag.z - new_mag.z;
-
-		float result[12]{
-									   old_mag.z * p2 * gyro.x - old_mag.y * p3 * gyro.x,
-									   old_mag.z * p2 * gyro.y - old_mag.y * p3 * gyro.y,
-									   old_mag.z * p2 * gyro.z - old_mag.y * p3 * gyro.z,
-									   old_mag.z * p2		   - old_mag.y * p3,
-
-			-old_mag.z * p1 * gyro.x						   + old_mag.x * p3 * gyro.x,
-			-old_mag.z * p1 * gyro.y						   + old_mag.x * p3 * gyro.y,
-			-old_mag.z * p1 * gyro.z						   + old_mag.x * p3 * gyro.z,
-			-old_mag.z * p1									   + old_mag.x * p3,
-
-			 old_mag.y * p1 * gyro.x - old_mag.x * p2 * gyro.x,
-			 old_mag.y * p1 * gyro.y - old_mag.x * p2 * gyro.y,
-			 old_mag.y * p1 * gyro.z - old_mag.x * p2 * gyro.z,
-			 old_mag.y * p1			 - old_mag.x * p2
+		Eigen::Vector3f cal = (result_.transform * tuple.gyro + result_.offset) * time_step_;
+		Eigen::Matrix3f rot{
+			{     1.0f,  cal.z(), -cal.y() },
+			{ -cal.z(),     1.0f,  cal.x() },
+			{  cal.y(), -cal.x(),     1.0f }
+		};
+		
+		Eigen::Vector3f djdp = (rot * tuple.old_mag - tuple.new_mag) * 2;
+		Eigen::Matrix3f dpdy{
+			{                  0, -tuple.old_mag.z(),  tuple.old_mag.y() },
+			{  tuple.old_mag.z(),                  0, -tuple.old_mag.x() },
+			{ -tuple.old_mag.y(),  tuple.old_mag.x(),                  0 }
+		};
+		Eigen::Matrix<float, 3, 12> dydw{
+			{ cal.x(), cal.y(), cal.z(), 1.0f,            0, 0, 0, 0,                      0, 0, 0, 0           },
+			{            0, 0, 0, 0,           cal.x(), cal.y(), cal.z(), 1.0f,            0, 0, 0, 0           },
+			{            0, 0, 0, 0,                      0, 0, 0, 0,           cal.x(), cal.y(), cal.z(), 1.0f },
 		};
 
-		for (int i = 0; i < 12; i++)
-			gradient_[i] += 2 * result[i];
+		gradient_ += djdp.transpose() * dpdy * dydw;
 	}
 
 }	// namespace dkvr

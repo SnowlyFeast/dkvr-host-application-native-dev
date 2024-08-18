@@ -23,6 +23,7 @@ namespace dkvr {
 		constexpr long long kThreadDelayLowerLimit = 16;
 #endif
 		constexpr long long kYieldDurationLimit = 10;
+		constexpr TIMEVAL kTimeout{ 0, 0 };
 
 		void IncreaseDelay(std::chrono::milliseconds& delay) {
 			if (delay.count() < kThreadDelayUpperLimit)
@@ -35,15 +36,18 @@ namespace dkvr {
 		}
 	}
 
-
-	Winsock2UDPServer::Winsock2UDPServer() : wsa_data_{}, socket_(INVALID_SOCKET), net_thread_(nullptr), exit_flag_(false), arrivals_() { }
+	Winsock2UDPServer::Winsock2UDPServer() :
+		wsa_data_{},
+		socket_(INVALID_SOCKET),
+		net_thread_(nullptr),
+		exit_flag_(false),
+		arrivals_(),
+		binding_ip_(0) { }
 
 	Winsock2UDPServer::~Winsock2UDPServer()
 	{
 		InternalClose();
 	}
-
-	static unsigned long testip = 0;
 
 	int Winsock2UDPServer::InternalInit()
 	{
@@ -74,7 +78,7 @@ namespace dkvr {
 						unsigned long ip = reinterpret_cast<sockaddr_in*>(ptr->ai_addr)->sin_addr.s_addr;
 						unsigned char* ptr = reinterpret_cast<unsigned char*>(&ip);
 						logger_.Info("Host ip address is {:d}.{:d}.{:d}.{:d}", ptr[0], ptr[1], ptr[2], ptr[3]);
-						testip = ip;
+						binding_ip_ = ip;
 					}
 				}
 			}
@@ -103,7 +107,7 @@ namespace dkvr {
 			.sin_port = htons(port())
 		};
 		inet_pton(AF_INET, "localhost", &server_addr.sin_addr);
-		server_addr.sin_addr.s_addr = testip;
+		server_addr.sin_addr.s_addr = binding_ip_;
 		if (bind(socket_, reinterpret_cast<sockaddr*>(&server_addr), sizeof(server_addr))) {
 			// socket bind failed
 			int error = WSAGetLastError();
@@ -242,7 +246,6 @@ namespace dkvr {
 				else if (peak >= 3)
 					DecreaseDelay(delay);
 
-				//logger_.Debug("Thread delay : {}ms", delay); TODO: delete this shit
 				std::this_thread::sleep_for(delay);
 			}
 		}
@@ -251,7 +254,6 @@ namespace dkvr {
 
 	bool Winsock2UDPServer::PeekRecv()
 	{
-		constexpr TIMEVAL kTimeout{ 0, 0 };
 		static fd_set fd_read;
 		FD_ZERO(&fd_read);
 		FD_SET(socket_, &fd_read);
@@ -267,13 +269,12 @@ namespace dkvr {
 
 	void Winsock2UDPServer::HandleRecv()
 	{
-		constexpr int kBufSize = sizeof(Datagram::buffer);
 		Datagram dgram{};
 		sockaddr_in sender{};
 		int sockaddr_size = sizeof(sockaddr_in);
 		char* buffer = reinterpret_cast<char*>(&dgram.buffer);
 
-		int res = recvfrom(socket_, buffer, kBufSize, 0, reinterpret_cast<sockaddr*>(&sender), &sockaddr_size);
+		int res = recvfrom(socket_, buffer, sizeof Datagram::buffer, 0, reinterpret_cast<sockaddr*>(&sender), &sockaddr_size);
 		if (res == SOCKET_ERROR) {
 			int error = WSAGetLastError();
 			logger_.Error("Network recvfrom failed : {}", error);
@@ -292,7 +293,6 @@ namespace dkvr {
 
 	bool Winsock2UDPServer::PeekWritability()
 	{
-		constexpr TIMEVAL kTimeout{ 0 , 0 };
 		static fd_set fd_write;
 		FD_ZERO(&fd_write);
 		FD_SET(socket_, &fd_write);
@@ -303,8 +303,6 @@ namespace dkvr {
 
 	void Winsock2UDPServer::SendOneDatagram()
 	{
-		constexpr int kBufSize = sizeof(Datagram::buffer);
-		constexpr int kSockaddrSize = sizeof(sockaddr_in);
 		static sockaddr_in dst{
 			.sin_family = AF_INET,
 			.sin_port = htons(client_port())
@@ -314,8 +312,9 @@ namespace dkvr {
 		dst.sin_addr.s_addr = dgram.address;
 		char* buffer = reinterpret_cast<char*>(&dgram.buffer);
 		int len = dgram.buffer.length + 8;	// hmm... I don't like this
+											// dgram.buffer.length is 'payload' length and 8 is 'meta-data' length
 
-		int res = sendto(socket_, buffer, len, 0, reinterpret_cast<sockaddr*>(&dst), kSockaddrSize);
+		int res = sendto(socket_, buffer, len, 0, reinterpret_cast<sockaddr*>(&dst), sizeof sockaddr_in);
 		if (res == SOCKET_ERROR) {
 			int error = WSAGetLastError();
 			logger_.Error("Network sendto failed : {}", error);

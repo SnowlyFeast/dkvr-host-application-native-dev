@@ -4,9 +4,7 @@
 #include <sstream>
 #include <string>
 
-#ifdef _DEBUG
-#	define DKVR_DEBUG_TRACKER_CONNECTION_DETAIL	// TODO: this won't work
-#else
+#ifndef _DEBUG
 #	define DKVR_LOGGER_GLOBAL_LEVEL		1
 #endif
 
@@ -21,6 +19,16 @@
 #include "version.h"
 
 #define DKVRHOST(handle)	(static_cast<dkvr::DKVRHost*>(handle))
+
+namespace 
+{
+	void StringCopy(const std::string& str, char* dst, int len)
+	{
+		size_t cap = std::min(str.size() + 1, static_cast<size_t>(len));
+		memcpy_s(dst, len, str.c_str(), cap);
+		dst[cap - 1] = '\0';
+	}
+}
 
 namespace dkvr {
 
@@ -52,30 +60,28 @@ namespace dkvr {
 		bool GetTrackerAcitve(int index) const { return FindTrackerAndGet(index, &Tracker::active); }
 		bool GetTrackerRaw(int index) const { return FindTrackerAndGet(index, &Tracker::raw); }
 		bool GetTrackerLed(int index) const { return FindTrackerAndGet(index, &Tracker::led); }
-		CalibrationMatrix GetTrackerCalibration(int index) const { return FindTrackerAndGet(index, &Tracker::calibration, dkvr::CalibrationMatrix{}); }
-		Quaternion GetTrackerQuat(int index) const { return FindTrackerAndGet(index, &Tracker::quaternion, Quaternion{}); }
-		Vector3 GetTrackerGyro(int index) const { return FindTrackerAndGet(index, &Tracker::gyro, Vector3{}); }
-		Vector3 GetTrackerAccel(int index) const { return FindTrackerAndGet(index, &Tracker::accel, Vector3{}); }
-		Vector3 GetTrackerMag(int index) const { return FindTrackerAndGet(index, &Tracker::mag, Vector3{}); }
+		TrackerCalibration GetTrackerCalibration(int index) const { return FindTrackerAndGet(index, &Tracker::calibration, dkvr::TrackerCalibration{}); }
+		Quaternionf GetTrackerOrientation(int index) const { return FindTrackerAndGet(index, &Tracker::orientation, Quaternionf{}); }
+		Vector3f GetTrackerGyro(int index) const { return FindTrackerAndGet(index, &Tracker::gyro, Vector3f{}); }
+		Vector3f GetTrackerAccel(int index) const { return FindTrackerAndGet(index, &Tracker::accel, Vector3f{}); }
+		Vector3f GetTrackerMag(int index) const { return FindTrackerAndGet(index, &Tracker::mag, Vector3f{}); }
 		int GetTrackerExecutionTime(int index) const { return FindTrackerAndGet(index, &Tracker::execution_time); }
 		int GetTrackerInitResult(int index) const { return FindTrackerAndGet(index, &Tracker::init_result); }
-		int GetTrackerLastError(int index) const { return FindTrackerAndGet(index, &Tracker::last_err); }
 		int GetTrackerBatteryPerc(int index) const { return FindTrackerAndGet(index, &Tracker::battery_perc); }
 
 		void SetTrackerActive(int index, bool active) { FindTrackerAndSet(index, &Tracker::set_active, active); }
 		void SetTrackerRaw(int index, bool raw) { FindTrackerAndSet(index, &Tracker::set_raw, raw); }
 		void SetTrackerLed(int index, bool led) { FindTrackerAndSet(index, &Tracker::set_led, led); }
-		void SetTrackerCalibration(int index, const CalibrationMatrix& calib) { FindTrackerAndSet(index, &Tracker::set_calibration, calib); }
+		void SetTrackerCalibration(int index, const TrackerCalibration& calib) { FindTrackerAndSet(index, &Tracker::set_calibration, calib); }
 
 		void RequestTrackerStatistic(int index) { FindTrackerAndCall(index, &Tracker::RequestStatisticUpdate); }
 		void RequestTrackerStatus(int index) { FindTrackerAndCall(index, &Tracker::RequestStatusUpdate); }
 		void RequestTrackerLocate(int index) { FindTrackerAndCall(index, &Tracker::RequestLocate); }
-		void RequestTrackerMagRefRecalc(int index) { FindTrackerAndCall(index, &Tracker::RequestMagRefRecalc); }
 
 		// calibrator
 		CalibrationManager::CalibrationStatus GetCalibratorStatus() { return calib_manager_.GetStatus(); }
 		std::string GetCalibratorStatusAsString() { return calib_manager_.GetStatusAsString(); }
-		CalibrationManager::SampleTypes GetCalibratorRequiredSampleType() { return calib_manager_.GetRequiredSampleType(); }
+		SampleType GetCalibratorRequiredSampleType() { return calib_manager_.GetRequiredSampleType(); }
 		std::string GetCalibratorRequiredSampleTypeAsString() { return calib_manager_.GetRequiredSampleTypeAsString(); }
 		int GetCalibratorTarget() { return calib_manager_.GetCurrentCalibrationTarget(); }
 		void BeginCalibrationWith(int index) { calib_manager_.Begin(index); }
@@ -123,13 +129,11 @@ namespace dkvr {
 		tracker_updater_(net_service_, tk_provider_),
 		calib_manager_(tk_provider_)
 	{
-		logger_.set_level(
 #ifdef _DEBUG
-			dkvr::Logger::Level::Debug
+		logger_.set_level(dkvr::Logger::Level::Debug);
 #else
-			dkvr::Logger::Level::Info
+		logger_.set_level(dkvr::Logger::Level::Info);
 #endif
-		);
 		logger_.set_mode(dkvr::Logger::Mode::Burst);
 		logger_.set_ostream(logger_output_);
 	}
@@ -159,16 +163,26 @@ namespace dkvr {
 	}
 }
 
-// export struct matching assertion
-static_assert(sizeof DKVRCalibration == sizeof dkvr::CalibrationMatrix);
-static_assert(sizeof DKVRCalibration::gyr_transform == sizeof dkvr::CalibrationMatrix::gyr_transform);
-static_assert(sizeof DKVRCalibration::acc_transform == sizeof dkvr::CalibrationMatrix::acc_transform);
-static_assert(sizeof DKVRCalibration::mag_transform == sizeof dkvr::CalibrationMatrix::mag_transform);
-static_assert(sizeof DKVRCalibration::gyr_noise_var == sizeof dkvr::CalibrationMatrix::gyr_noise_var);
-static_assert(sizeof DKVRCalibration::acc_noise_var == sizeof dkvr::CalibrationMatrix::acc_noise_var);
-static_assert(sizeof DKVRCalibration::mag_noise_var == sizeof dkvr::CalibrationMatrix::mag_noise_var);
-static_assert(sizeof DKVRQuaternion == sizeof dkvr::Quaternion);
-static_assert(sizeof DKVRVector3 == sizeof dkvr::Vector3);
+// assertion
+static_assert(DKVR_HOST_EXPORTED_HEADER_VER == DKVR_HOST_VERSION);
+
+static_assert(std::is_trivial_v<DKVRVector3>);
+static_assert(std::is_standard_layout_v<DKVRVector3>);
+static_assert(sizeof DKVRVector3 == sizeof dkvr::Vector3f);
+
+static_assert(std::is_trivial_v<DKVRQuaternion>);
+static_assert(std::is_standard_layout_v<DKVRQuaternion>);
+static_assert(sizeof DKVRQuaternion == sizeof dkvr::Quaternionf);
+
+static_assert(std::is_trivial_v<DKVRCalibration>);
+static_assert(std::is_standard_layout_v<DKVRCalibration>);
+static_assert(sizeof DKVRCalibration == sizeof dkvr::TrackerCalibration);
+static_assert(offsetof(DKVRCalibration, gyr_transform) == offsetof(dkvr::TrackerCalibration, gyr_transform));
+static_assert(offsetof(DKVRCalibration, acc_transform) == offsetof(dkvr::TrackerCalibration, acc_transform));
+static_assert(offsetof(DKVRCalibration, mag_transform) == offsetof(dkvr::TrackerCalibration, mag_transform));
+static_assert(offsetof(DKVRCalibration, gyr_noise_var) == offsetof(dkvr::TrackerCalibration, gyr_noise_var));
+static_assert(offsetof(DKVRCalibration, acc_noise_var) == offsetof(dkvr::TrackerCalibration, acc_noise_var));
+static_assert(offsetof(DKVRCalibration, mag_noise_var) == offsetof(dkvr::TrackerCalibration, mag_noise_var));
 
 // version
 void __stdcall dkvrVersion(int* out) { *out = DKVR_HOST_VERSION; }
@@ -189,17 +203,11 @@ void __stdcall dkvrLoggerSetLevelError(DKVRHostHandle handle) { DKVRHOST(handle)
 void __stdcall dkvrLoggerGetUncheckCount(DKVRHostHandle handle, int* out) { *out = DKVRHOST(handle)->GetUncheckedLogCount(); }
 void __stdcall dkvrLoggerGetUncheckedLogOne(DKVRHostHandle handle, char* out, int len)
 {
-	std::string log = DKVRHOST(handle)->GetUncheckedLogOne();
-	size_t cap = std::min(log.size() + 1, static_cast<size_t>(len));
-	memcpy_s(out, len, log.c_str(), cap);
-	out[cap - 1] = '\0';
+	StringCopy(DKVRHOST(handle)->GetUncheckedLogOne(), out, len);
 }
 void __stdcall dkvrLoggerGetUncheckedLogAll(DKVRHostHandle handle, char* out, int len)
 {
-	std::string log = DKVRHOST(handle)->GetUncheckedLogAll();
-	size_t cap = std::min(log.size() + 1, static_cast<size_t>(len));
-	memcpy_s(out, len, log.c_str(), cap);
-	out[cap - 1] = '\0';
+	StringCopy(DKVRHOST(handle)->GetUncheckedLogAll(), out, len);
 }
 
 // tracker
@@ -207,10 +215,7 @@ void __stdcall dkvrTrackerGetCount(DKVRHostHandle handle, int* out) { *out = DKV
 void __stdcall dkvrTrackerGetAddress(DKVRHostHandle handle, int index, long* out) { *out = DKVRHOST(handle)->GetTrackerIPAdress(index); }
 void __stdcall dkvrTrackerGetName(DKVRHostHandle handle, int index, char* out, int len)
 {
-	std::string name = DKVRHOST(handle)->GetTrackerName(index);
-	size_t cap = std::min(name.size() + 1, static_cast<size_t>(len));
-	memcpy_s(out, len, name.c_str(), cap);
-	out[cap - 1] = '\0';
+	StringCopy(DKVRHOST(handle)->GetTrackerName(index), out, len);
 }
 void __stdcall dkvrTrackerGetConnectionStatus(DKVRHostHandle handle, int index, int* out) { *out = static_cast<int>(DKVRHOST(handle)->GetTrackerConnectionStatus(index)); }
 void __stdcall dkvrTrackerGetRtt(DKVRHostHandle handle, int index, int* out) { *out = static_cast<int>(DKVRHOST(handle)->GetTrackerRtt(index)); }
@@ -219,32 +224,26 @@ void __stdcall dkvrTrackerGetRaw(DKVRHostHandle handle, int index, int* out) { *
 void __stdcall dkvrTrackerGetLed(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerLed(index); }
 void __stdcall dkvrTrackerGetCalibration(DKVRHostHandle handle, int index, DKVRCalibration* out)
 {
-	dkvr::CalibrationMatrix calib = DKVRHOST(handle)->GetTrackerCalibration(index);
-	memcpy_s(out, sizeof DKVRCalibration, &calib, sizeof dkvr::CalibrationMatrix);
+	*(reinterpret_cast<dkvr::TrackerCalibration*>(out)) = DKVRHOST(handle)->GetTrackerCalibration(index);
 }
-void __stdcall dkvrTrackerGetQuat(DKVRHostHandle handle, int index, DKVRQuaternion* out)
+void __stdcall dkvrTrackerGetOrientation(DKVRHostHandle handle, int index, DKVRQuaternion* out)
 {
-	dkvr::Quaternion quat = DKVRHOST(handle)->GetTrackerQuat(index);
-	memcpy_s(out, sizeof DKVRQuaternion, &quat, sizeof dkvr::Quaternion);
+	*(reinterpret_cast<dkvr::Quaternionf*>(out)) = DKVRHOST(handle)->GetTrackerOrientation(index);
 }
 void __stdcall dkvrTrackerGetGyro(DKVRHostHandle handle, int index, DKVRVector3* out)
 {
-	dkvr::Vector3 vec = DKVRHOST(handle)->GetTrackerGyro(index);
-	memcpy_s(out, sizeof DKVRVector3, &vec, sizeof dkvr::Vector3);
+	*(reinterpret_cast<dkvr::Vector3f*>(out)) = DKVRHOST(handle)->GetTrackerGyro(index);
 }
 void __stdcall dkvrTrackerGetAccel(DKVRHostHandle handle, int index, DKVRVector3* out)
 {
-	dkvr::Vector3 vec = DKVRHOST(handle)->GetTrackerAccel(index);
-	memcpy_s(out, sizeof DKVRVector3, &vec, sizeof dkvr::Vector3);
+	*(reinterpret_cast<dkvr::Vector3f*>(out)) = DKVRHOST(handle)->GetTrackerAccel(index);
 }
 void __stdcall dkvrTrackerGetMag(DKVRHostHandle handle, int index, DKVRVector3* out)
 {
-	dkvr::Vector3 vec = DKVRHOST(handle)->GetTrackerMag(index);
-	memcpy_s(out, sizeof DKVRVector3, &vec, sizeof dkvr::Vector3);
+	*(reinterpret_cast<dkvr::Vector3f*>(out)) = DKVRHOST(handle)->GetTrackerMag(index);
 }
 void __stdcall dkvrTrackerGetExecutionTime(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerExecutionTime(index); }
 void __stdcall dkvrTrackerGetInitResult(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerInitResult(index); }
-void __stdcall dkvrTrackerGetLastError(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerLastError(index); }
 void __stdcall dkvrTrackerGetBatteryPerc(DKVRHostHandle handle, int index, int* out) { *out = DKVRHOST(handle)->GetTrackerBatteryPerc(index); }
 
 void __stdcall dkvrTrackerSetActive(DKVRHostHandle handle, int index, int in) { DKVRHOST(handle)->SetTrackerActive(index, in); }
@@ -252,30 +251,23 @@ void __stdcall dkvrTrackerSetRaw(DKVRHostHandle handle, int index, int in) { DKV
 void __stdcall dkvrTrackerSetLed(DKVRHostHandle handle, int index, int in) { DKVRHOST(handle)->SetTrackerLed(index, in); }
 void __stdcall dkvrTrackerSetCalibration(DKVRHostHandle handle, int index, const DKVRCalibration* in)
 {
-	DKVRHOST(handle)->SetTrackerCalibration(index, *(reinterpret_cast<const dkvr::CalibrationMatrix*>(in)));
+	DKVRHOST(handle)->SetTrackerCalibration(index, *(reinterpret_cast<const dkvr::TrackerCalibration*>(in)));
 }
 
 void __stdcall dkvrTrackerRequestStatistic(DKVRHostHandle handle, int index) { DKVRHOST(handle)->RequestTrackerStatistic(index); }
 void __stdcall dkvrTrackerRequestStatus(DKVRHostHandle handle, int index) { DKVRHOST(handle)->RequestTrackerStatus(index); }
 void __stdcall dkvrTrackerRequestLocate(DKVRHostHandle handle, int index) { DKVRHOST(handle)->RequestTrackerLocate(index); }
-void __stdcall dkvrTrackerRequestMagRefRecalc(DKVRHostHandle handle, int index) { DKVRHOST(handle)->RequestTrackerMagRefRecalc(index); }
 
 // calibrator
 void __stdcall dkvrCalibratorGetStatus(DKVRHostHandle handle, int* out) { *out = static_cast<int>(DKVRHOST(handle)->GetCalibratorStatus()); }
 void __stdcall dkvrCalibratorGetStatusString(DKVRHostHandle handle, char* out, int len)
 {
-	std::string status = DKVRHOST(handle)->GetCalibratorStatusAsString();
-	size_t cap = std::min(status.size() + 1, static_cast<size_t>(len));
-	memcpy_s(out, len, status.c_str(), cap);
-	out[cap - 1] = '\0';
+	StringCopy(DKVRHOST(handle)->GetCalibratorStatusAsString(), out, len);
 }
 void __stdcall dkvrCalibratorGetRequiredSampleType(DKVRHostHandle handle, int* out) { *out = static_cast<int>(DKVRHOST(handle)->GetCalibratorRequiredSampleType()); }
 void __stdcall dkvrCalibratorGetRequiredSampleTypeString(DKVRHostHandle handle, char* out, int len)
 {
-	std::string type = DKVRHOST(handle)->GetCalibratorRequiredSampleTypeAsString();
-	size_t cap = std::min(type.size() + 1, static_cast<size_t>(len));
-	memcpy_s(out, len, type.c_str(), cap);
-	out[cap - 1] = '\0';
+	StringCopy(DKVRHOST(handle)->GetCalibratorRequiredSampleTypeAsString(), out, len);
 }
 void __stdcall dkvrCalibratorGetCurrentTarget(DKVRHostHandle handle, int* out) { *out = DKVRHOST(handle)->GetCalibratorTarget(); }
 void __stdcall dkvrCalibratorBeginWith(DKVRHostHandle handle, int index) { DKVRHOST(handle)->BeginCalibrationWith(index); }

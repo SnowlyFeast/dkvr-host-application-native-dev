@@ -18,22 +18,6 @@ void LoggerCheckingThreadLoop();
 void ParseKeyInput();
 void ReadIMUThreadLoop(int target, int interval);
 
-TEST(Matrix_inverse, inverse_test)
-{
-	dkvr::Matrix test(4, 4);
-	test.Fill();
-	for (int i = 0; i < 4; i++)
-	{
-		test[0][i] = i;
-		test[1][i] = i * 2;
-		test[2][i] = i * 3;
-		test[3][i] = i * 4;
-	}
-
-	dkvr::Matrix result = test.GetInverse();
-}
-
-
 TEST(Struct, size_test)
 {
 	// check header and dll version
@@ -388,10 +372,10 @@ void ParseKeyInput()
 		size_t count = 0;
 		if (compare(arg[1], "calib"))
 		{
-			static Calibration calib;
+			static DKVRCalibration calib;
 			dkvrTrackerGetCalibration(handle, target, &calib);
 			ptr = &calib;
-			count = sizeof Calibration;
+			count = sizeof DKVRCalibration;
 		}
 
 		if (ptr && count) {
@@ -431,9 +415,9 @@ void ParseKeyInput()
 
 			if (compare(arg[1], "calib"))
 			{
-				if (size == sizeof Calibration)
+				if (size == sizeof DKVRCalibration)
 				{
-					dkvrTrackerSetCalibration(handle, target, reinterpret_cast<Calibration*>(buffer));
+					dkvrTrackerSetCalibration(handle, target, reinterpret_cast<DKVRCalibration*>(buffer));
 					std::cout << "Calibration struct loaded." << std::endl;
 				}
 				else
@@ -455,22 +439,26 @@ void ParseKeyInput()
 	}
 }
 
-Vector3 CrossProduct(Vector3 lhs, Vector3 rhs) { return Vector3{ lhs.y * rhs.z - lhs.z * rhs.y, lhs.z * rhs.x - lhs.x * rhs.z, lhs.x * rhs.y - lhs.y * rhs.x }; }
-Vector3 EulerRodrigues(Quaternion quat, Vector3 vec)
+DKVRVector3 CrossProduct(DKVRVector3 lhs, DKVRVector3 rhs)
 {
-	Vector3 vpart{ 2 * quat.x, 2 * quat.y, 2 * quat.z };
-	Vector3 cross1 = CrossProduct(vpart, vec);
-	Vector3 cross2 = CrossProduct(vpart, cross1);
+	return DKVRVector3{ lhs.y * rhs.z - lhs.z * rhs.y, lhs.z * rhs.x - lhs.x * rhs.z, lhs.x * rhs.y - lhs.y * rhs.x };
+}
 
-	return Vector3{ vec.x + cross1.x * quat.w + cross2.x, vec.y + cross1.y * quat.w + cross2.y, vec.z + cross1.z * quat.w + cross2.z };
+DKVRVector3 EulerRodrigues(DKVRQuaternion quat, DKVRVector3 vec)
+{
+	DKVRVector3 vpart{ 2 * quat.x, 2 * quat.y, 2 * quat.z };
+	DKVRVector3 cross1 = CrossProduct(vpart, vec);
+	DKVRVector3 cross2 = CrossProduct(vpart, cross1);
+
+	return DKVRVector3{ vec.x + cross1.x * quat.w + cross2.x, vec.y + cross1.y * quat.w + cross2.y, vec.z + cross1.z * quat.w + cross2.z };
 }
 
 void ReadIMUThreadLoop(int target, int interval)
 {
 	while (!imu_read_exit)
 	{
-		Quaternion quat{};
-		Vector3 gyro{}, accel{}, mag{};
+		DKVRQuaternion quat{};
+		DKVRVector3 gyro{}, accel{}, mag{};
 		dkvrTrackerGetQuat(handle, target, &quat);
 		dkvrTrackerGetGyro(handle, target, &gyro);
 		dkvrTrackerGetAccel(handle, target, &accel);
@@ -502,8 +490,8 @@ void ReadIMUThreadLoop(int target, int interval)
 			std::ofstream fout("./ypr.dat", std::ios::trunc);
 			if (fout.is_open())
 			{
-				Vector3 forward = EulerRodrigues(quat, Vector3{ 1, 0, 0 });
-				Vector3 head = EulerRodrigues(quat, Vector3{ 0, 0, -1 });
+				DKVRVector3 forward = EulerRodrigues(quat, DKVRVector3{ 1, 0, 0 });
+				DKVRVector3 head = EulerRodrigues(quat, DKVRVector3{ 0, 0, -1 });
 
 				fout << forward.x << " " << forward.y << " " << forward.z << " " << head.x << " " << head.y << " " << head.z;
 				fout.close();

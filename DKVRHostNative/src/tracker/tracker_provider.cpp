@@ -57,6 +57,18 @@ namespace dkvr {
 		return ConstAtomicTracker(&target.first, target.second);
 	}
 
+	AtomicTracker TrackerProvider::FindByName(std::string name)
+	{
+		std::lock_guard<std::mutex> lock(mutex_);
+
+		for (auto i = trackers_.begin(); i != trackers_.end(); i++)
+		{
+			if (i->first.name() == name)
+				return AtomicTracker(&i->first, i->second);
+		}
+		return AtomicTracker();
+	}
+
 	std::vector<AtomicTracker> TrackerProvider::GetAllTrackers()
 	{
 		std::vector<AtomicTracker> v;

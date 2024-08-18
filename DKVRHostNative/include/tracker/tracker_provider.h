@@ -19,6 +19,7 @@ namespace dkvr {
 		AtomicTracker FindExistOrInsertNew(unsigned long address);
 		AtomicTracker FindByIndex(int index);
 		ConstAtomicTracker FindByIndex(int index) const;
+		AtomicTracker FindByName(std::string name);
 		std::vector<AtomicTracker> GetAllTrackers();
 
 

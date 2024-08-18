@@ -1,60 +1,50 @@
 #include "math/ellipsoid_estimator.h"
 
+#include <algorithm>
 #include <cmath>
 #include <vector>
 
-#include "math/matrix.h"
-#include "math/qr_algorithm.h"
-#include "math/vector.h"
+#include "Eigen/Dense"
 
 namespace dkvr {
 
-	Vector EllipsoidParameter::GetCenterVector() const
+	Eigen::Vector3f EllipsoidParameter::GetCenterVector() const
 	{
-		return  -0.5f * (a.GetInverse() * b);
+		return	-0.5f * (a.inverse() * b);
 	}
 
-	Matrix EllipsoidParameter::GetTransformationMatrix() const
+	Eigen::Matrix3f EllipsoidParameter::GetTransformationMatrix() const
 	{
-		Vector c = GetCenterVector();
-		Matrix a_tild = a * (1.0f / (c * (a * c) - d));
+		Eigen::Vector3f c = GetCenterVector();
+		Eigen::Matrix3f a_tild = a * (1.0f / (c.transpose() * a * c - d));
 
-		std::vector<EigenPair> eigen_pairs(QRAlgorithm::GetEigenPairs(a_tild));
+		Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> solver(a_tild);
+		// I don't think this will happen
+		if (solver.info() != Eigen::Success)
+			return Eigen::Matrix3f{ {1, 0, 0}, {0, 1, 0}, {0, 0, 1} };
 
-		Matrix sigma(3, 3);
-		sigma.Fill(0);
-		for (unsigned long i = 0; i < 3; i++)
-			sigma[i][i] = sqrt(eigen_pairs[i].eigenvalue);
+		return solver.eigenvectors() * solver.eigenvalues().sqrt() * solver.eigenvectors().transpose();
+	}
 
-		Matrix u(3, 3);
-		for (unsigned long i = 0; i < 3; i++) {
-			Vector v = eigen_pairs[i].eigenvector.GetNormalized();
-			for (unsigned long j = 0; j < 3; j++)
-				u[j][i] = v[j];
+
+	// [ Reference ] complete algorithm is available here
+	// "Consistent Least Squares Fitting of Ellipsoids." Numerische Mathematik 98 (2004): 177-194.
+	EllipsoidParameter EllipsoidEstimator::EstimateEllipsoid(const std::vector<Eigen::Vector3f>& samples, float noise_var)
+	{
+		constexpr int max_sample_size = 300;
+
+		const int size = std::min(static_cast<int>(samples.size()), max_sample_size);
+		Eigen::Matrix<float, 3, max_sample_size> t[5];
+		for (int i = 0; i < size; i++)
+		{
+			t[0].col(i) = Eigen::Vector3f(1, 1, 1);
+			t[1].col(i) = samples[i];
+			t[2].col(i) = samples[i].array().pow(2) - noise_var;
+			t[3].col(i) = samples[i].array().pow(3) - 3 * samples[i].array() * noise_var;
+			t[4].col(i) = samples[i].array().pow(4) - 6 * samples[i].array().square() * noise_var + 3 * powf(noise_var, 2);
 		}
 
-		return u * sigma * u.GetTranspose();
-	}
-
-	EllipsoidParameter EllipsoidEstimator::EstimateEllipsoid(const std::vector<Vector3>& samples, float noise_var)
-	{
-		const unsigned long size = std::min(static_cast<unsigned long>(samples.size()), 300UL);
-
-		std::vector<Matrix> t;
-		t.reserve(5);
-		for (int i = 0; i < 5; i++)
-			t.emplace_back(3, 300);
-
-		for (unsigned long i = 0; i < 3; i++)
-			for (unsigned long j = 0; j < size; j++) {
-				t[0][i][j] = 1;
-				t[1][i][j] = samples[j][i];
-				t[2][i][j] = powf(samples[j][i], 2) - noise_var;
-				t[3][i][j] = powf(samples[j][i], 3) - 3 * samples[j][i] * noise_var;
-				t[4][i][j] = powf(samples[j][i], 4) - 6 * powf(samples[j][i], 2) * noise_var + 3 * powf(noise_var, 2);
-			}
-
-		constexpr int m[10][2]{ {1, 1},{1, 2},{2, 2},{1, 3},{2, 3},{3, 3},{1, 0},{2, 0},{3, 0},{0, 0} };
+		constexpr int m[10][2]{ {1, 1}, {1, 2}, {2, 2}, {1, 3}, {2, 3}, {3, 3}, {1, 0}, {2, 0}, {3, 0}, {0, 0} };
 
 		int r[10][10][3]{};
 		for (int p = 0; p < 10; p++)
@@ -65,62 +55,47 @@ namespace dkvr {
 		float eta[10][10]{};
 		for (int p = 0; p < 10; p++)
 			for (int q = p; q < 10; q++) {
-				float tot = 0;
+				float total = 0;
 				for (unsigned long k = 0; k < size; k++) {
 					float val = 1;
 					for (int i = 0; i < 3; i++) {
 						int deg = r[p][q][i];
-						val *= t[deg][i][k];
+						val *= t[deg](i, k);
 					}
-					tot += val;
+					total += val;
 				}
-				eta[p][q] = tot;
+				eta[p][q] = total;
 			}
 
-		Matrix psi(10, 10);
-		for (unsigned long p = 0; p < 10; p++)
-			for (unsigned long q = p; q < 10; q++) {
-				bool p_off_diag = (p == 1 || p == 3 || p == 4);
-				bool q_off_diag = (q == 1 || q == 3 || q == 4);
-
-				if (p_off_diag && q_off_diag)
-					psi[p][q] = 4 * eta[p][q];
-				else if (!p_off_diag && !q_off_diag)
-					psi[p][q] = eta[p][q];
-				else
-					psi[p][q] = 2 * eta[p][q];
+		Eigen::Matrix<float, 10, 10> psi;
+		for (int p = 0; p < 10; p++)
+			for (int q = p; q < 10; q++)
+			{
+				int multiplier = 1;
+				if (p == 1 || p == 3 || p == 4) multiplier *= 2;
+				if (q == 1 || q == 3 || q == 4) multiplier *= 2;
+				psi(p, q) = eta[p][q] * multiplier;
 
 				if (p == q) continue;
-				psi[q][p] = psi[p][q];
+				psi(q, p) = psi(p, q);
 			}
-		std::vector<EigenPair> eigens(QRAlgorithm::GetEigenPairs(psi));
-		int index = 0;
-		for (int i = 1; i < 10; i++) {
-			if (fabs(eigens[i].eigenvalue) < fabs(eigens[index].eigenvalue))
-				index = i;
-		}
 
-		Vector b_als = eigens[index].eigenvector.GetNormalized();
-		Matrix a(3, 3);
-		Vector b(3);
-		float d;
+		Eigen::SelfAdjointEigenSolver<Eigen::Matrix<float, 10, 10>> solver(psi);
+		if (solver.info() != Eigen::Success)
+			return EllipsoidParameter(Eigen::Matrix3f{ {1, 0, 0}, {0, 1, 0}, {0, 0, 1} }, Eigen::Vector3f(0, 0, 0), 0.0f);
 
-		a[0][0] = b_als[0];
-		a[0][1] = b_als[1];
-		a[0][2] = b_als[3];
-		a[1][0] = a[0][1];
-		a[1][1] = b_als[2];
-		a[1][2] = b_als[4];
-		a[2][0] = a[0][2];
-		a[2][1] = a[1][2];
-		a[2][2] = b_als[5];
+		auto max = std::max_element(solver.eigenvalues().begin(), solver.eigenvalues().end());
+		int index = std::distance(solver.eigenvalues().begin(), max);
 
-		b[0] = b_als[6];
-		b[1] = b_als[7];
-		b[2] = b_als[8];
-
-		d = b_als[9];
-
+		Eigen::Vector<float, 10> b_als = solver.eigenvectors().col(index);
+		Eigen::Matrix3f a{ 
+			{b_als[0], b_als[1], b_als[3]},
+			{b_als[1], b_als[2], b_als[4]},
+			{b_als[3], b_als[4], b_als[5]}
+		};
+		Eigen::Vector3f b{ b_als[6], b_als[7], b_als[8] };
+		float d = b_als[9];
+		
 		return EllipsoidParameter(a, b, d);
 	}
 

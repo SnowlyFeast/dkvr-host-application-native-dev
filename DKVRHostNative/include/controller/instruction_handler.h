@@ -29,9 +29,10 @@ namespace dkvr {
 		void NoiseVariance(Tracker* target, Instruction& inst);
 
 		void Status(Tracker* target, Instruction& inst);
-		void ImuRaw(Tracker* target, Instruction& inst);
-		void ImuQuat(Tracker* target, Instruction& inst);
+		void Raw(Tracker* target, Instruction& inst);
+		void Orientation(Tracker* target, Instruction& inst);
 		void Statistic(Tracker* target, Instruction& inst);
+		void Debug(Tracker* target, Instruction& inst);
 
 		Logger& logger_ = Logger::GetInstance();
 	};

@@ -14,10 +14,27 @@
 
 namespace dkvr {
 
+    namespace
+    {
 #ifdef DKVR_SYSTEM_BIG_ENDIAN
-    static void BigEndianBitConversion(Instruction& inst);
+        void BigEndianBitConversion(Instruction& inst)
+        {
+            // bit reverse for sequence number
+            char* seq_ptr = reinterpret_cast<char*>(&inst.sequence);
+            std::reverse(seq_ptr, seq_ptr + sizeof(uint32_t));
+
+            // bit reverse for payload
+            // align should be larger than 1 and power of 2 
+            char* payload_ptr = reinterpret_cast<char*>(&inst.payload);
+            if (inst.align > 1 && IsPowerOf2(inst.align))
+            {
+                for (int i = 0; i < inst.length; i += inst.align)
+                    std::reverse(payload_ptr + i, payload_ptr + i + inst.align);
+            }
+        }
 #endif
-    static bool IsPowerOf2(uint8_t num);
+        bool IsPowerOf2(uint8_t num) { return !(num & (num - 1)); }
+    }
 
     NetworkService::NetworkService() :
 #ifdef _WIN32
@@ -72,29 +89,6 @@ namespace dkvr {
 #endif
         if (udp_->PushSending(Datagram{ address, inst }))
             logger_.Error("[Network Service] Instruction queuing failed : internal UDP Server not bounded.");
-    }
-
-#ifdef DKVR_SYSTEM_BIG_ENDIAN
-    void BigEndianBitConversion(Instruction& inst)
-    {
-        // bit reverse for sequence number
-        char* seq_ptr = reinterpret_cast<char*>(&inst.sequence);
-        std::reverse(seq_ptr, seq_ptr + sizeof(uint32_t));
-
-        // bit reverse for payload
-        // align should be larger than 1 and power of 2 
-        char* payload_ptr = reinterpret_cast<char*>(&inst.payload);
-        if (inst.align > 1 && IsPowerOf2(inst.align)) 
-        {
-            for (int i = 0; i < inst.length; i += inst.align)
-                std::reverse(payload_ptr + i, payload_ptr + i + inst.align);
-        }
-    }
-#endif
-
-    bool IsPowerOf2(uint8_t num)
-    {
-        return !(num & (num - 1));
     }
 
 }   // namespace dkvr

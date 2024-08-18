@@ -13,7 +13,6 @@ namespace dkvr {
 
 	struct TrackerInformation
 	{
-
 		unsigned long address;
 		std::string name;
 		ConnectionStatus connection;

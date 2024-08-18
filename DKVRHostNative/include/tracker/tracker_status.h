@@ -8,8 +8,7 @@ namespace dkvr {
 	{
 	public:
 		uint8_t init_result;
-		uint8_t last_err;
-		uint8_t battery_perc;
+		uint8_t battery_level;
 	};
 
 }	// namespace dkvr

@@ -1,5 +1,7 @@
 #include "controller/instruction_handler.h"
 
+#include "Eigen/Core"
+
 #include "controller/instruction_set.h"
 
 namespace dkvr
@@ -44,22 +46,23 @@ namespace dkvr
 		case Opcode::NoiseVariance:
 			NoiseVariance(target, inst); break;
 
-		case Opcode::MagRefRecalc:
-			// TODO: implement MagRefRecalc Handle -> not client side op
-			break;
 
 			// data transfer
 		case Opcode::Status:
 			Status(target, inst); break;
 
-		case Opcode::ImuRaw:
-			ImuRaw(target, inst); break;
+		case Opcode::Raw:
+			Raw(target, inst); break;
 
-		case Opcode::ImuQuat:
-			ImuQuat(target, inst); break;
+		case Opcode::Orientation:
+			Orientation(target, inst); break;
 
 		case Opcode::Statistic:
 			Statistic(target, inst); break;
+
+		case Opcode::Debug:
+			Debug(target, inst); break;
+
 
 			// unknown opcode
 		default:
@@ -159,47 +162,45 @@ namespace dkvr
 
 	void InstructionHandler::Status(Tracker* target, Instruction& inst)
 	{
-		// TODO: Make Tracker Status Struct. Implement.
 		TrackerStatus status{};
 		memcpy(&status, inst.payload, sizeof(status));
 		target->set_tracker_status(status);
 	}
 
-	void InstructionHandler::ImuRaw(Tracker* target, Instruction& inst)
+	void InstructionHandler::Raw(Tracker* target, Instruction& inst)
 	{
 		if (target->IsConnected()) 
 		{
-			Vector3 gyr{
+			Vector3f gyr{
 				inst.payload[0].single,
 				inst.payload[1].single,
 				inst.payload[2].single
 			};
-			Vector3 acc{
+			Vector3f acc{
 				inst.payload[3].single,
 				inst.payload[4].single,
 				inst.payload[5].single
 			};
-			Vector3 mag{
+			Vector3f mag{
 				inst.payload[6].single,
 				inst.payload[7].single,
 				inst.payload[8].single
 			};
-
-			target->set_imu_readings(gyr, acc, mag);
+			target->set_raw_data(RawDataSet(gyr, acc, mag));
 		}
 	}
 
-	void InstructionHandler::ImuQuat(Tracker* target, Instruction& inst)
+	void InstructionHandler::Orientation(Tracker* target, Instruction& inst)
 	{
 		if (target->IsConnected()) 
 		{
-			Quaternion quat{
+			Quaternionf quat{
 				inst.payload[0].single,
 				inst.payload[1].single,
 				inst.payload[2].single,
 				inst.payload[3].single
 			};
-			target->set_quaternion(quat);
+			target->set_orientation(quat);
 		}
 	}
 
@@ -211,6 +212,11 @@ namespace dkvr
 			memcpy(&statistic, inst.payload, sizeof TrackerStatistic);
 			target->set_tracker_statistic(statistic);
 		}
+	}
+
+	void InstructionHandler::Debug(Tracker* target, Instruction& inst)
+	{
+		
 	}
 
 }

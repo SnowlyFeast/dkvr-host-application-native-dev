@@ -13,5 +13,6 @@ namespace dkvr {
 	};
 
 	static_assert(std::is_trivial_v<Datagram>);
+	static_assert(std::is_standard_layout_v<Datagram>);
 
 }	// namespace dkvr

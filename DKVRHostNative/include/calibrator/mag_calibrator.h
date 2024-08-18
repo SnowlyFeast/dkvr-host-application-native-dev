@@ -2,25 +2,30 @@
 
 #include <vector>
 
-#include "math/matrix.h"
+#include "Eigen/Core"
+
+#include "calibrator/calibrator.h"
+#include "calibrator/type.h"
+#include "tracker/tracker_data.h"
 
 namespace dkvr
 {
 
-	class MagCalibrator
+	class MagCalibrator : public Calibrator
 	{
 	public:
-		/// <summary>
-		/// Requires samples in a static state
-		/// </summary>
-		static float CalculateNoiseVariance(const std::vector<Vector3>& samples);
+		MagCalibrator() : result_(), noise_var_() { }
 
+		void Reset() override { }
+		void Accumulate(SampleType type, const std::vector<RawDataSet>& samples) override;
+		void Calculate() override { }
 
-		/// <summary>
-		/// Requires samples from multiple directions
-		/// </summary>
-		static Matrix CalculateCalibrationMatrix(const std::vector<Vector3>& samples, float noise_variance);
+		CalibrationMatrix GetCalibrationMatrix() override { return result_; }
+		Eigen::Vector3f GetNoiseVairance() override { return noise_var_; }
 
+	private:
+		CalibrationMatrix result_;
+		Eigen::Vector3f noise_var_;
 	};
 
 }	// namespace dkvr

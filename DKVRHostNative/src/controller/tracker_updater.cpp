@@ -138,12 +138,6 @@ namespace dkvr {
 			Instruction inst = BuildInstruction(InstructionSet::Locate, target->send_sequence_num(), nullptr);
 			net_service_.Send(target->address(), inst);
 		}
-
-		if (target->IsMagneticRefRecalRequired())
-		{
-			Instruction inst = BuildInstruction(InstructionSet::MagRefRecalc, target->send_sequence_num(), nullptr);
-			net_service_.Send(target->address(), inst);
-		}
 	}
 
 	void TrackerUpdater::MatchConfigurationWithClient(Tracker* target)
@@ -174,6 +168,10 @@ namespace dkvr {
 
 				case ConfigurationKey::NoiseVariance:
 					inst = BuildInstruction(InstructionSet::NoiseVariance, target->send_sequence_num(), target->calibration_ref().gyr_noise_var);
+					break;
+
+				case ConfigurationKey::MagReference:
+					inst = BuildInstruction(InstructionSet::MagReference, target->send_sequence_num(), target->mag_reference());
 					break;
 
 				default:

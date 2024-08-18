@@ -4,7 +4,7 @@
 
 namespace dkvr {
 
-	constexpr uint8_t kHeaderValue = 'D';
+	inline constexpr uint8_t kOpenerValue = 'D';
 
 	enum class Opcode : uint8_t
 	{
@@ -17,6 +17,7 @@ namespace dkvr {
 
 		// miscellaneous op
 		Locate			= 0x11,
+		ClientName		= 0x12,
 
 		// configuration op
 		Behavior		= 0x21,
@@ -24,13 +25,13 @@ namespace dkvr {
 		AccTransform	= 0x23,
 		MagTransform	= 0x24,
 		NoiseVariance	= 0x25,
-		MagRefRecalc	= 0x28,
 
 		// data transfer op
 		Status			= 0x31,
-		ImuRaw			= 0x32,
-		ImuQuat			= 0x33,
-		Statistic		= 0x34
+		Raw				= 0x32,
+		Orientation		= 0x33,
+		Statistic		= 0x34,
+		Debug			= 0x3F
 	};
 
 	struct InstructionHint
@@ -45,11 +46,11 @@ namespace dkvr {
 	class InstructionSet
 	{
 	public:
-		static constexpr uint8_t OpcodeClassMask = 0xF0;
-		static constexpr uint8_t NetworkingOp = 0x00;
-		static constexpr uint8_t MiscellaneousOp = 0x10;
-		static constexpr uint8_t ConfigurationOp = 0x20;
-		static constexpr uint8_t DataTransferOp = 0x30;
+		static constexpr uint8_t kOpcodeClassMask = 0xF0;
+		static constexpr uint8_t kClassNetworking = 0x00;
+		static constexpr uint8_t kClassMiscellaneous = 0x10;
+		static constexpr uint8_t kClassConfiguration = 0x20;
+		static constexpr uint8_t kClassDataTransfer = 0x30;
 
 		static constexpr InstructionHint Handshake1{ Opcode::Handshake1, 0, 0 };
 		static constexpr InstructionHint Handshake2{ Opcode::Handshake2, 0, 0 };
@@ -58,18 +59,19 @@ namespace dkvr {
 		static constexpr InstructionHint Pong{ Opcode::Pong, 0, 0 };
 
 		static constexpr InstructionHint Locate{ Opcode::Locate, 0, 0 };
+		static constexpr InstructionHint ClientName{ Opcode::ClientName, 0, 0 };
 
 		static constexpr InstructionHint Behavior{ Opcode::Behavior, 1, 1 };
 		static constexpr InstructionHint CalibrationGr{ Opcode::GyrTransform, 4, 12 };
 		static constexpr InstructionHint CalibrationAc{ Opcode::AccTransform, 4, 12 };
 		static constexpr InstructionHint CalibrationMg{ Opcode::MagTransform, 4, 12 };
 		static constexpr InstructionHint NoiseVariance{ Opcode::NoiseVariance, 4, 9 };
-		static constexpr InstructionHint MagRefRecalc{ Opcode::MagRefRecalc, 0, 0 };
 
 		static constexpr InstructionHint Status{ Opcode::Status, 0, 0 };
-		static constexpr InstructionHint ImuRaw{ Opcode::ImuRaw, 0, 0 };
-		static constexpr InstructionHint ImuQuat{ Opcode::ImuQuat, 0, 0 };
+		static constexpr InstructionHint ImuRaw{ Opcode::Raw, 0, 0 };
+		static constexpr InstructionHint ImuQuat{ Opcode::Orientation, 0, 0 };
 		static constexpr InstructionHint Statistic{ Opcode::Statistic, 0, 0 };
+		static constexpr InstructionHint Debug{ Opcode::Debug, 0, 0 };
 	};
 
 }	// namespace dkvr

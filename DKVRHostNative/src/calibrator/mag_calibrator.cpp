@@ -1,55 +1,69 @@
 #include "calibrator/mag_calibrator.h"
 
-#include <cmath>
 #include <vector>
 
-#include "math/matrix.h"
-#include "math/vector.h"
+#include "Eigen/Dense"
+
+#include "calibrator/common_calibrator.h"
 #include "math/ellipsoid_estimator.h"
+#include "tracker/tracker_data.h"
 
 namespace dkvr
 {
-	float MagCalibrator::CalculateNoiseVariance(const std::vector<Vector3>& samples)
+
+	namespace
 	{
-		Vector3 mean{ 0 };
-		for (const Vector3& s : samples)
-			mean += s;
-		mean /= samples.size();
-
-		Vector3 var{ 0 };
-		for (const Vector3& s : samples)
+		bool IsRotationalConstraintSatisfied(const RawDataSet& current, const Eigen::Vector3f& prev)
 		{
-			Vector3 diff = s - mean;
-			var.x += diff.x * diff.x;
-			var.y += diff.y * diff.y;
-			var.z += diff.z * diff.z;
-		}
-		var /= samples.size();
+			constexpr float minimum_angle = 3.0f;
 
-		return (var.x + var.y + var.z) / 3;
+			Eigen::Vector3f v_cur{ current.mag[0], current.mag[1], current.mag[2] };
+			float cos = v_cur.normalized().dot(prev.normalized());
+			return cos > cosf(minimum_angle);
+		}
 	}
 
-	Matrix MagCalibrator::CalculateCalibrationMatrix(const std::vector<Vector3>& samples, float noise_variance)
+	void MagCalibrator::Accumulate(SampleType type, const std::vector<RawDataSet>& samples)
 	{
-		std::vector<Vector3> raw;
-		raw.reserve(samples.size());
-		for (const Vector3& v : samples)
-			raw.push_back(v);
+		constexpr size_t limit = 300;
 
-		EllipsoidParameter param = EllipsoidEstimator::EstimateEllipsoid(raw, noise_variance);
-
-		Matrix result(3, 4);
-		Matrix tf = param.GetTransformationMatrix();
-		Vector offset = tf * param.GetCenterVector();
-
-		for (int i = 0; i < 3; i++)
+		// calculate noise variance once
+		if (type == SampleType::XPositive)
 		{
-			for (int j = 0; j < 3; j++)
-				result[i][j] = tf[i][j];
-			result[i][3] = -offset[i];
+			size_t size = std::min(limit, samples.size());
+
+			std::vector<Eigen::Vector3f> vec;
+			vec.reserve(size);
+			for (int i = 0; i < size; i++)
+				vec.emplace_back(samples[i].mag[0], samples[i].mag[1], samples[i].mag[2]);
+
+			noise_var_ = CommonCalibrator::CalculateNoiseVariance(vec);
+		}
+		// only interested with rotational samples
+		else if (type == SampleType::Rotational)
+		{
+			// prepare well-spaced samples
+			std::vector<Eigen::Vector3f> mag_samples;
+			mag_samples.emplace_back(samples[0].mag[0], samples[0].mag[1], samples[0].mag[2]);
+			for (int i = 1; i < samples.size(); i++)
+			{
+				if (IsRotationalConstraintSatisfied(samples[i], mag_samples.back()))
+					mag_samples.emplace_back(samples[i].mag[0], samples[i].mag[1], samples[i].mag[2]);
+
+				if (mag_samples.size() >= limit)
+					break;
+			}
+
+			// calculate calibration matrix
+			EllipsoidParameter param = EllipsoidEstimator::EstimateEllipsoid(mag_samples, noise_var_.norm());
+			Eigen::Matrix3f transform = param.GetTransformationMatrix();
+			Eigen::Vector3f offset = -transform * param.GetCenterVector();
+
+			result_.transform = transform;
+			result_.offset = offset;
+			CommonCalibrator::TransformNoiseVariance(noise_var_, result_);
 		}
 
-		return result;
 	}
 
 }	// namespace dkvr

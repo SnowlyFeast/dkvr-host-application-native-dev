@@ -7,15 +7,15 @@
 #include <thread>
 #include <vector>
 
+#include "Eigen/Dense"
+
 #include "calibrator/accel_calibrator.h"
 #include "calibrator/gyro_calibrator.h"
 #include "calibrator/mag_calibrator.h"
-
-#include "math/vector.h"
-#include "math/matrix.h"
+#include "calibrator/type.h"
 
 #include "tracker/tracker.h"
-#include "tracker/tracker_imu.h"
+#include "tracker/tracker_data.h"
 #include "tracker/tracker_provider.h"
 
 #include "util/logger.h"
@@ -28,22 +28,11 @@ namespace dkvr
 	public:
 		enum class CalibrationStatus
 		{
+			Idle,
+			Configuring,
 			StandBy,
-			ConfiguringTracker,
-			WaitingContinue,
-			RecordingIMU,
+			Recording,
 			Calibrating
-		};
-
-		enum class SampleTypes : int
-		{
-			NegativeZ,
-			PositiveZ,
-			NegativeY,
-			PositiveY,
-			NegativeX,
-			PositiveX,
-			Rotational
 		};
 
 		CalibrationManager(TrackerProvider& tk_provider);
@@ -56,8 +45,9 @@ namespace dkvr
 		void Abort();
 
 		int GetCurrentCalibrationTarget() const { return target_index_; }
-		CalibrationStatus GetStatus() const;
-		SampleTypes GetRequiredSampleType() const;
+
+		CalibrationStatus GetStatus() const { return status_; }
+		SampleType GetRequiredSampleType() const { return sample_type_; }
 
 		std::string GetStatusAsString() const;
 		std::string GetRequiredSampleTypeAsString() const;
@@ -70,25 +60,24 @@ namespace dkvr
 		void HandleSamples();
 		void ApplyCalibration();
 
-		GyroCalibrator gyro_calib_;
-		AccelCalibrator accel_calib_;
-		MagCalibrator mag_calib_;
-		
-		CalibrationStatus status_;
-		SampleTypes sample_type_;
-		int target_index_;
-		uint8_t saved_behavior_;
-		CalibrationMatrix saved_calibration_;
+		GyroCalibrator gyro_calibrator_;
+		AccelCalibrator accel_calibrator_;
+		MagCalibrator mag_calibrator_;
 
 		std::unique_ptr<std::thread> thread_ptr_;
 		std::atomic_bool exit_flag_;
+		
+		// calibration manager status
+		CalibrationStatus status_;
+		SampleType sample_type_;
 
-		std::vector<Vector3> gyro_samples_;
-		std::vector<Vector3> accel_samples_;
-		std::vector<Vector3> mag_samples1_;		// to calibrate mag
-		std::vector<Vector3> mag_samples2_;		// to calibrate gyro
-		float mag_noise_var_;
-		CalibrationMatrix result_calibration_;
+		// tracker
+		int target_index_;
+		uint8_t saved_behavior_;
+		TrackerCalibration saved_calibration_;
+		TrackerCalibration result_calibration_;
+
+		std::vector<RawDataSet> samples_;
 
 		TrackerProvider& tk_provider_;
 		Logger& logger_ = Logger::GetInstance();

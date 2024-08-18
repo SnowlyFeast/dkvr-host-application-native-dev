@@ -41,6 +41,7 @@ namespace dkvr {
 		std::unique_ptr<std::thread> net_thread_;
 		std::atomic_bool exit_flag_;
 		std::map<unsigned long, int> arrivals_;
+		unsigned long binding_ip_;
 
 		Logger& logger_ = Logger::GetInstance();
 	};

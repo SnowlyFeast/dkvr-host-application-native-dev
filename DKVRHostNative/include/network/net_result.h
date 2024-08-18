@@ -1,7 +1,8 @@
 #pragma once
 
 namespace dkvr {
-
+	
+	// maybe I should change this to Enum class
 	class NetResult
 	{
 	public:
