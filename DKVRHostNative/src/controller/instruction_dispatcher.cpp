@@ -2,7 +2,7 @@
 
 #include <thread>
 
-#include "controller/instruction_set.h"
+#include "instruction/instruction_set.h"
 
 namespace dkvr {
 
@@ -46,10 +46,10 @@ namespace dkvr {
 	{
 		unsigned char* ip = reinterpret_cast<unsigned char*>(&address);
 
-		// check header value
-		if (inst.header != kOpenerValue) 
+		// check opener value
+		if (inst.opener != kOpenerValue) 
 		{
-			logger_.Error("Wrong header value({:X}) from {:d}.{:d}.{:d}.{:d}", inst.header, ip[0], ip[1], ip[2], ip[3]);
+			logger_.Error("Wrong header value({:X}) from {:d}.{:d}.{:d}.{:d}", inst.opener, ip[0], ip[1], ip[2], ip[3]);
 			return;
 		}
 

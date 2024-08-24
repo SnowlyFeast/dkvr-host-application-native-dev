@@ -4,8 +4,8 @@
 #include <memory>
 #include <thread>
 
-#include "controller/instruction_format.h"
 #include "controller/instruction_handler.h"
+#include "instruction/instruction_format.h"
 #include "network/network_service.h"
 #include "tracker/tracker_provider.h"
 #include "util/logger.h"

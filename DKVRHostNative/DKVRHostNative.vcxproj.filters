@@ -75,7 +75,7 @@
     <ClInclude Include="include\tracker\tracker_data.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="include\controller\instruction_set.h">
+    <ClInclude Include="include\instruction\instruction_set.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="include\tracker\tracker_provider.h">
@@ -90,7 +90,7 @@
     <ClInclude Include="include\tracker\atomic_tracker.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="include\controller\instruction_format.h">
+    <ClInclude Include="include\instruction\instruction_format.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="include\controller\tracker_updater.h">
@@ -842,6 +842,9 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="lib\Eigen\src\misc\RealSvd2x2.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="include\tracker\tracker_debug.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

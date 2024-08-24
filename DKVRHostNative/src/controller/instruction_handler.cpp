@@ -1,8 +1,10 @@
 #include "controller/instruction_handler.h"
 
-#include "Eigen/Core"
+#include "instruction/instruction_set.h"
 
-#include "controller/instruction_set.h"
+#include "tracker/tracker.h"
+#include "tracker/tracker_data.h"
+#include "tracker/tracker_debug.h"
 
 namespace dkvr
 {
@@ -208,15 +210,18 @@ namespace dkvr
 	{
 		if (target->IsConnected())
 		{
-			TrackerStatistic statistic{};
-			memcpy(&statistic, inst.payload, sizeof TrackerStatistic);
-			target->set_tracker_statistic(statistic);
+			TrackerStatistic* statistic = reinterpret_cast<TrackerStatistic*>(&inst.payload);
+			target->set_tracker_statistic(*statistic);
 		}
 	}
 
 	void InstructionHandler::Debug(Tracker* target, Instruction& inst)
 	{
-		
+		if (target->IsConnected())
+		{
+			TrackerDebug* debug = reinterpret_cast<TrackerDebug*>(&inst.payload);
+			logger_.Debug("{} (dkvr_err {:#04x} / timestamp {}) from {}.", debug->msg, debug->dkvr_err, debug->timestamp, target->name());
+		}
 	}
 
 }

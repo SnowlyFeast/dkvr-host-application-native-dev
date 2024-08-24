@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "controller/instruction_format.h"
+#include "instruction/instruction_format.h"
 #include "tracker/tracker.h"
 #include "util/logger.h"
 

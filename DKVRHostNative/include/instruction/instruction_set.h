@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include "instruction/instruction_format.h"
+
 namespace dkvr {
 
 	inline constexpr uint8_t kOpenerValue = 'D';
@@ -41,6 +43,17 @@ namespace dkvr {
 		uint8_t arg_count;
 
 		constexpr uint8_t length() const { return align * arg_count; }
+		constexpr Instruction ToInstruction() const
+		{
+			return Instruction{
+				.opener = kOpenerValue,
+				.length = length(),
+				.align = align,
+				.opcode = static_cast<uint8_t>(opcode),
+				.sequence = 0,
+				.payload = {0}
+			};
+		}
 	};
 
 	class InstructionSet

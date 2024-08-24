@@ -1,20 +1,35 @@
 #include "controller/tracker_updater.h"
 
+#include <chrono>
 #include <cstdint>
+#include <memory>
+#include <thread>
 
-#include "controller/instruction_set.h"
+#include "instruction/instruction_set.h"
 
 #include "tracker/tracker.h"
 #include "tracker/tracker_info.h"
 
 namespace dkvr {
 
-	static Instruction BuildInstruction(InstructionHint, uint32_t, const void*);
+	namespace
+	{
+		constexpr std::chrono::milliseconds kThreadDelay = std::chrono::milliseconds(1000);
+		constexpr long long kHeartbeatInterval = 1000;
+		constexpr long long kTimeoutInterval = 5000;
+		constexpr long long kRttUpdateInterval = 5000;
 
-	constexpr std::chrono::milliseconds kThreadDelay = std::chrono::milliseconds(1000);
-	constexpr long long kHeartbeatInterval	= 1000;
-	constexpr long long kTimeoutInterval	= 5000;
-	constexpr long long kRttUpdateInterval	= 5000;
+		Instruction BuildInstruction(InstructionHint hint, uint32_t seq, const void* payload)
+		{
+			Instruction inst = hint.ToInstruction();
+			if (payload != nullptr)
+				memcpy_s(inst.payload, sizeof(Instruction::payload), payload, hint.length());
+
+			return inst;
+		}
+	}
+
+
 
 	TrackerUpdater::TrackerUpdater(NetworkService& net_service, TrackerProvider& tk_provider) :
 		thread_ptr_(nullptr), exit_flag_(false), now_(), net_service_(net_service), tk_provider_(tk_provider) { }
@@ -177,22 +192,6 @@ namespace dkvr {
 				net_service_.Send(target->address(), inst);
 			}
 		}
-	}
-
-	Instruction BuildInstruction(InstructionHint hint, uint32_t seq, const void* payload)
-	{
-		Instruction inst
-		{
-			.header = kOpenerValue,
-			.length = hint.length(),
-			.align = hint.align,
-			.opcode = static_cast<uint8_t>(hint.opcode),
-			.sequence = seq
-		};
-		if (payload != nullptr)
-			memcpy_s(inst.payload, sizeof(Instruction::payload), payload, hint.length());
-
-		return inst;
 	}
 
 }	// namespace dkvr

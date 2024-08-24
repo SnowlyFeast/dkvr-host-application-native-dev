@@ -73,6 +73,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <AllProjectIncludesArePublic>
     </AllProjectIncludesArePublic>
+    <AllProjectBMIsArePublic>false</AllProjectBMIsArePublic>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -154,9 +155,10 @@
     <ClInclude Include="include\calibrator\mag_calibrator.h" />
     <ClInclude Include="include\calibrator\calibrator.h" />
     <ClInclude Include="include\controller\instruction_handler.h" />
-    <ClInclude Include="include\controller\instruction_format.h" />
+    <ClInclude Include="include\instruction\instruction_format.h" />
     <ClInclude Include="include\controller\tracker_updater.h" />
     <ClInclude Include="include\math\ellipsoid_estimator.h" />
+    <ClInclude Include="include\tracker\tracker_debug.h" />
     <ClInclude Include="include\tracker\tracker_statistic.h" />
     <ClInclude Include="include\version.h" />
     <ClInclude Include="lib\Eigen\src\Cholesky\LDLT.h" />
@@ -399,7 +401,7 @@
     <ClInclude Include="lib\fmt\format.h" />
     <ClInclude Include="lib\fmt\ostream.h" />
     <ClInclude Include="include\controller\instruction_dispatcher.h" />
-    <ClInclude Include="include\controller\instruction_set.h" />
+    <ClInclude Include="include\instruction\instruction_set.h" />
     <ClInclude Include="include\tracker\atomic_tracker.h" />
     <ClInclude Include="include\tracker\tracker.h" />
     <ClInclude Include="include\tracker\tracker_data.h" />
