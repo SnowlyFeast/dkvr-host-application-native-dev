@@ -39,7 +39,7 @@ extern "C" {
     DLLEXPORT void __stdcall dkvrAssertVersion(int version, int* success);
 
     // instance control
-    DLLEXPORT void __stdcall dkvrCreateInstance	(DKVRHostHandle* hptr);
+    DLLEXPORT void __stdcall dkvrCreateInstance	(DKVRHostHandle* hptr, char* msg, int len);
     DLLEXPORT void __stdcall dkvrDeleteInstance	(DKVRHostHandle* hptr);
     DLLEXPORT void __stdcall dkvrRunHost		(DKVRHostHandle handle);
     DLLEXPORT void __stdcall dkvrStopHost		(DKVRHostHandle handle);

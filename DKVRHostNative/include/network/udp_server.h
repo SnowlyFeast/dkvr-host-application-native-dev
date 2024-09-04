@@ -8,11 +8,15 @@
 #include "network/datagram.h"
 #include "util/logger.h"
 
-namespace dkvr {
+namespace dkvr 
+{
+	
 
 	class UDPServer
 	{
 	public:
+		static constexpr unsigned short kClientPort = 8899u;
+
 		enum class Status
 		{
 			InitRequired,
@@ -37,13 +41,13 @@ namespace dkvr {
 		void Wakeup() { convar_.notify_all(); }
 
 		Status status() const { return status_; }
-		unsigned short client_port() const { return 8899u; }
+		unsigned short client_port() const { return kClientPort; }
 		unsigned short port() const { return port_; }
 		void set_port(unsigned short port) { port_ = port; }
 
 	protected:
-		virtual int InternalInit() = 0;
-		virtual int InternalBind() = 0;	// responsible for handling recv and send
+		virtual int InternalInit() = 0;	// just throw exception on failure
+		virtual int InternalBind() = 0;	// responsible to run thread for handling recv and send
 		virtual void InternalClose() = 0;
 		virtual void InternalDeinit() = 0;
 

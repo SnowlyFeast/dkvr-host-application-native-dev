@@ -317,14 +317,14 @@ void ParseKeyInput()
 			dkvrCalibratorGetStatusString(handle, buffer, sizeof(buffer));
 			std::cout << "Calibrator Status : " << buffer << std::endl;
 
-			if (status)
+			if (status != DKVRCalibratorStatus::Idle)
 			{
 				int target = 0;
 				dkvrCalibratorGetCurrentTarget(handle, &target);
 				std::cout << "Current calibration target : " << target << std::endl;
 			}
 
-			if (status == 2)
+			if (status == DKVRCalibratorStatus::StandBy)
 			{
 				dkvrCalibratorGetRequiredSampleTypeString(handle, buffer, sizeof(buffer));
 				std::cout << "Required sample type : " << buffer << std::endl;
@@ -346,6 +346,12 @@ void ParseKeyInput()
 		{
 			dkvrCalibratorAbort(handle);
 		}
+		else if (compare(second, "perc"))
+		{
+			int progress;
+			dkvrCalibratorGetProgress(handle, &progress);
+			std::cout << "Calibrator progress : " << progress << "%" << std::endl;
+		}
 		else
 		{
 			std::cout << "Unknown calibrator command." << std::endl;
@@ -365,6 +371,21 @@ void ParseKeyInput()
 			dkvrTrackerGetCalibration(handle, target, &calib);
 			ptr = &calib;
 			count = sizeof DKVRCalibration;
+
+			std::cout << "Gyro Calibration : ";
+			for (int i = 0; i < 12; i++) std::cout << calib.gyr_transform[i] << " " ;
+			std::cout << std::endl;
+			std::cout << "Accel Calibration : ";
+			for (int i = 0; i < 12; i++) std::cout << calib.acc_transform[i] << " ";
+			std::cout << std::endl;
+			std::cout << "Mag Calibration : ";
+			for (int i = 0; i < 12; i++) std::cout << calib.mag_transform[i] << " ";
+			std::cout << std::endl;
+			std::cout << "Noise Variance : ";
+			for (int i = 0; i < 3; i++) std::cout << calib.gyr_noise_var[i] << " ";
+			for (int i = 0; i < 3; i++) std::cout << calib.acc_noise_var[i] << " ";
+			for (int i = 0; i < 3; i++) std::cout << calib.mag_noise_var[i] << " ";
+			std::cout << std::endl;
 		}
 
 		if (ptr && count) {

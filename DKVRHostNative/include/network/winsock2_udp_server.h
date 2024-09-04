@@ -1,7 +1,6 @@
 #pragma once
 
 #include <atomic>
-#include <map>
 #include <memory>
 #include <thread>
 #ifdef _WIN32
@@ -33,14 +32,13 @@ namespace dkvr {
 
 		bool PeekRecv();
 		void HandleRecv();
-		bool PeekWritability();
+		bool PeekWritability() const;
 		void SendOneDatagram();
 
 		WSADATA wsa_data_;
 		SOCKET socket_;
 		std::unique_ptr<std::thread> net_thread_;
 		std::atomic_bool exit_flag_;
-		std::map<unsigned long, int> arrivals_;
 		unsigned long binding_ip_;
 
 		Logger& logger_ = Logger::GetInstance();

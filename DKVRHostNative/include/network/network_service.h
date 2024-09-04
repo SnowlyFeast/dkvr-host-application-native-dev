@@ -10,15 +10,16 @@
 #include "network/udp_server.h"
 #include "util/logger.h"
 
-namespace dkvr {
+namespace dkvr 
+{
 
-	class NetworkService
+	class NetworkService final
 	{
 	public:
 		NetworkService();
 		~NetworkService();
 
-		bool Run(unsigned short port = 8899);
+		bool Run(unsigned short port = 8899u);
 		void Stop();
 		unsigned long WaitAndPopReceived(Instruction& out);
 		void Send(unsigned long address, Instruction& inst);

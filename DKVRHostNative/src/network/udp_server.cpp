@@ -1,36 +1,48 @@
 #include "network/udp_server.h"
 
-#include "network/net_result.h"
-
-namespace dkvr {
+namespace dkvr 
+{
 
 	int UDPServer::Init()
 	{
 		int result = InternalInit();
-		status_ = result ? Status::InitFailed : Status::StandBy;
+
+		// InitFailed is meaningless as network service will just throw with non zero result
+		status_ = result ? Status::InitFailed : Status::StandBy;	
 
 		return result;
 	}
 
 	int UDPServer::Bind()
 	{
-		if (status_ == Status::Running)
-			return NetResult::OK;
-		else if (status_ == Status::InitRequired)
-			return NetResult::InitRequired;
-		else if (status_ == Status::InitFailed)
-			return NetResult::InitFailed;
-		else if (status_ == Status::Closed)
-			return NetResult::ServerClosed;
+		// check internal state
+		switch (status_)
+		{
+		default:
+		case UDPServer::Status::InitRequired:
+		case UDPServer::Status::InitFailed:
+		case UDPServer::Status::Closed:
+		case UDPServer::Status::Error:
+			logger_.Error("UDP Server is not on bind()-callable state : {}", static_cast<int>(status_));
+			break;
 
-		int result = InternalBind();
-		if (result) {
-			status_ = Status::Error;
+		case UDPServer::Status::Running:
+			logger_.Info("UDP Server is already running.");
+			break;
+
+		case UDPServer::Status::StandBy:
+			break;
 		}
-		else {
-			status_ = Status::Running;
-			exit_flag_ = false;
-		}
+
+		// run bind
+        int result = InternalBind();
+        if (result)
+            status_ = Status::Error;
+        else
+        {
+            status_ = Status::Running;
+            exit_flag_ = false;
+        }
 
 		return result;
 	}
@@ -55,13 +67,16 @@ namespace dkvr {
 	int UDPServer::PushSending(const Datagram& dgram)
 	{
 		if (status_ != Status::Running)
-			return NetResult::BindRequired;
+		{
+			logger_.Error("Call Bind() before push any dgram.");	// it's implementation problem
+			return 1;
+		}
 
 		{
 			std::lock_guard<std::mutex> lock(mutex_);
 			sending_.push(dgram);
 		}
-		return NetResult::OK;
+		return 0;
 	}
 
 	bool UDPServer::PeekSending() const

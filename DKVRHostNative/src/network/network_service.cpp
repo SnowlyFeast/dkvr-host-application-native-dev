@@ -12,7 +12,8 @@
 #	error "Include UDP Server header here."
 #endif
 
-namespace dkvr {
+namespace dkvr 
+{
 
     namespace
     {
@@ -43,7 +44,7 @@ namespace dkvr {
 #endif
     {
         if (udp_->Init())
-            throw std::runtime_error("UDP server init failed");
+            throw std::runtime_error("UDP server init failed with unknown reason.");
     }
 
     NetworkService::~NetworkService()
@@ -55,7 +56,7 @@ namespace dkvr {
     {
         udp_->set_port(port);
         int result = udp_->Bind();
-        if (result) 
+        if (result != 0) 
         {
             logger_.Error("[Network Service] Internal UDP Server bind failed.");
             return true;
@@ -73,7 +74,8 @@ namespace dkvr {
         if (udp_->WaitReceived()) 
         {
             Datagram&& dgram = udp_->PopReceived();
-            memcpy_s(&out, sizeof(Instruction), &dgram.buffer, sizeof(Instruction));
+            out = std::move(dgram.buffer);
+            //memcpy_s(&out, sizeof(Instruction), &dgram.buffer, sizeof(Instruction));
             DoBitConversionIfRequired(out);
             return dgram.address;
         }

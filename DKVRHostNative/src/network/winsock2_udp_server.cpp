@@ -11,29 +11,12 @@
 #	error "Do not include this header in non-Windows OS."
 #endif
 
-#include "network/net_result.h"
+namespace dkvr 
+{
 
-namespace dkvr {
-
-	namespace {
-		constexpr long long kThreadDelayUpperLimit = 512;
-#ifdef DKVR_SYSTEM_ENABLE_FULL_THROTTLE
-		constexpr long long kThreadDelayLowerLimit = 8;
-#else
-		constexpr long long kThreadDelayLowerLimit = 16;
-#endif
-		constexpr long long kYieldDurationLimit = 10;
+	namespace 
+	{
 		constexpr TIMEVAL kTimeout{ 0, 0 };
-
-		void IncreaseDelay(std::chrono::milliseconds& delay) {
-			if (delay.count() < kThreadDelayUpperLimit)
-				delay *= 2;
-		}
-
-		void DecreaseDelay(std::chrono::milliseconds& delay) {
-			if (delay.count() > kThreadDelayLowerLimit)
-				delay /= 2;
-		}
 	}
 
 	Winsock2UDPServer::Winsock2UDPServer() :
@@ -41,7 +24,6 @@ namespace dkvr {
 		socket_(INVALID_SOCKET),
 		net_thread_(nullptr),
 		exit_flag_(false),
-		arrivals_(),
 		binding_ip_(0) { }
 
 	Winsock2UDPServer::~Winsock2UDPServer()
@@ -56,10 +38,9 @@ namespace dkvr {
 		if (wsa_result != 0) {
 			// WSAStartup failed
 			WSACleanup();
-			logger_.Error("WSA startup failed : {}", wsa_result);
-			ParseWSAError(wsa_result);
-
-			return NetResult::InitFailed;
+			
+			// you cannot use logger nor ParseWSAError func here, just throw exception
+			throw std::runtime_error(Logger::FormatString("WSA startup failed : WSAError {}", wsa_result));
 		}
 
 		// get local ip address
@@ -77,6 +58,7 @@ namespace dkvr {
 					if (ptr->ai_family == AF_INET) {
 						unsigned long ip = reinterpret_cast<sockaddr_in*>(ptr->ai_addr)->sin_addr.s_addr;
 						unsigned char* ptr = reinterpret_cast<unsigned char*>(&ip);
+						// will be logged if init successful
 						logger_.Info("Host ip address is {:d}.{:d}.{:d}.{:d}", ptr[0], ptr[1], ptr[2], ptr[3]);
 						binding_ip_ = ip;
 					}
@@ -91,13 +73,12 @@ namespace dkvr {
 			// socket failed-
 			int error = WSAGetLastError();
 			WSACleanup();
-			logger_.Error("Socket creation failed : {}", error);
-			ParseWSAError(error);
 
-			return NetResult::InitFailed;
+			// same, just throw exception
+			throw std::runtime_error(Logger::FormatString("Socket creation failed : WSAError {}", error));
 		}
 
-		return NetResult::OK;
+		return 0;
 	}
 
 	int Winsock2UDPServer::InternalBind()
@@ -107,14 +88,14 @@ namespace dkvr {
 			.sin_port = htons(port())
 		};
 		inet_pton(AF_INET, "localhost", &server_addr.sin_addr);
-		server_addr.sin_addr.s_addr = binding_ip_;
+		//server_addr.sin_addr.s_addr = binding_ip_;
 		if (bind(socket_, reinterpret_cast<sockaddr*>(&server_addr), sizeof(server_addr))) {
 			// socket bind failed
 			int error = WSAGetLastError();
 			logger_.Error("Socket binding failed : {}", error);
 			ParseWSAError(error);
 
-			return NetResult::BindFailed;
+			return 1;
 		}
 
 		// run net thread
@@ -122,7 +103,7 @@ namespace dkvr {
 		exit_flag_ = false;
 		net_thread_ = std::make_unique<std::thread>(&Winsock2UDPServer::NetworkThreadLoop, this);
 
-		return NetResult::OK;
+		return 0;
 	}
 
 	void Winsock2UDPServer::InternalClose()
@@ -189,65 +170,17 @@ namespace dkvr {
 
 	void Winsock2UDPServer::NetworkThreadLoop()
 	{
-		static std::chrono::milliseconds delay(512);
 		logger_.Debug("Internal network thread launched.");
 
-		while (!exit_flag_) {
-#ifdef DKVR_SYSTEM_ENABLE_FULL_THROTTLE
-			if (delay.count() == kThreadDelayLowerLimit) {
-				// full throttle mode
-				using namespace std::chrono;
+		while (!exit_flag_) 
+		{
+			while (PeekSending() && PeekWritability())
+				SendOneDatagram();
 
-				bool first_yield = false;
-				steady_clock::time_point yield_begin = steady_clock::now();
-				while (true) {
-					while (PeekSending() && PeekWritability())
-						SendOneDatagram();
+			while (PeekRecv())
+				HandleRecv();
 
-					if (PeekRecv()) {
-						first_yield = true;
-						HandleRecv();
-					}
-					else {
-						if (first_yield) {
-							first_yield = false;
-							yield_begin = steady_clock::now();
-						}
-
-						milliseconds duration = duration_cast<milliseconds>(yield_begin - steady_clock::now());
-						if (duration.count() > kYieldDurationLimit) {
-							IncreaseDelay(delay);
-							break;
-						}
-						std::this_thread::yield();
-					}
-				}
-			}
-			else 
-#endif
-			{
-				// standard delay mode
-				while (PeekSending() && PeekWritability()) {
-					SendOneDatagram();
-				}
-
-				while (PeekRecv())
-					HandleRecv();
-
-				// throttle control
-				int peak = 0;
-				for (auto& item : arrivals_) {
-					if (item.second > peak)
-						peak = item.second;
-					item.second = 0;
-				}
-				if (peak == 0)
-					IncreaseDelay(delay);
-				else if (peak >= 3)
-					DecreaseDelay(delay);
-
-				std::this_thread::sleep_for(delay);
-			}
+			std::this_thread::yield();
 		}
 		logger_.Debug("Internal network thread closed.");
 	}
@@ -275,7 +208,8 @@ namespace dkvr {
 		char* buffer = reinterpret_cast<char*>(&dgram.buffer);
 
 		int res = recvfrom(socket_, buffer, sizeof Datagram::buffer, 0, reinterpret_cast<sockaddr*>(&sender), &sockaddr_size);
-		if (res == SOCKET_ERROR) {
+		if (res == SOCKET_ERROR) 
+		{
 			int error = WSAGetLastError();
 			logger_.Error("Network recvfrom failed : {}", error);
 			ParseWSAError(error);
@@ -283,15 +217,9 @@ namespace dkvr {
 		}
 		dgram.address = sender.sin_addr.s_addr;
 		PushReceived(dgram);
-
-		auto iter = arrivals_.find(dgram.address);
-		if (iter != arrivals_.end())
-			iter->second++;
-		else
-			arrivals_.emplace(dgram.address, 1);
 	}
 
-	bool Winsock2UDPServer::PeekWritability()
+	bool Winsock2UDPServer::PeekWritability() const
 	{
 		static fd_set fd_write;
 		FD_ZERO(&fd_write);
@@ -312,10 +240,11 @@ namespace dkvr {
 		dst.sin_addr.s_addr = dgram.address;
 		char* buffer = reinterpret_cast<char*>(&dgram.buffer);
 		int len = dgram.buffer.length + 8;	// hmm... I don't like this
-											// dgram.buffer.length is 'payload' length and 8 is 'meta-data' length
+											// dgram.buffer.length is 'payload' length and 8 is header length
 
 		int res = sendto(socket_, buffer, len, 0, reinterpret_cast<sockaddr*>(&dst), sizeof sockaddr_in);
-		if (res == SOCKET_ERROR) {
+		if (res == SOCKET_ERROR) 
+		{
 			int error = WSAGetLastError();
 			logger_.Error("Network sendto failed : {}", error);
 			ParseWSAError(error);

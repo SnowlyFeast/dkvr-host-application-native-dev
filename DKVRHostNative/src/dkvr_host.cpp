@@ -153,9 +153,9 @@ namespace dkvr {
         logger_.set_mode(dkvr::Logger::Mode::Burst);
         logger_.set_ostream(logger_output_);
     }
-    catch (std::runtime_error except)
+    catch (const std::runtime_error& except)
     {
-        throw except;	// just rethrow it
+        throw;	// just rethrow it
     }
 
     void DKVRHost::Run()
@@ -203,7 +203,15 @@ void __stdcall dkvrGetVersion(int* out)                             { *out     =
 void __stdcall dkvrAssertVersion(int version, int* success)         { *success = (DKVR_HOST_VERSION == version); }
 
 // instance control
-void __stdcall dkvrCreateInstance(DKVRHostHandle* hptr)             { try { *hptr = new dkvr::DKVRHost(); } catch (std::exception except) { *hptr = nullptr; } }
+void __stdcall dkvrCreateInstance(DKVRHostHandle* hptr, char* msg, int len) {
+    try { *hptr = new dkvr::DKVRHost(); }
+    catch (const std::exception& except)
+    {
+        *hptr = nullptr;
+        std::string what(except.what());
+        StringCopy(what, msg, len);
+    }
+}
 void __stdcall dkvrDeleteInstance(DKVRHostHandle* hptr)             { delete *hptr; *hptr = nullptr; }
 void __stdcall dkvrRunHost(DKVRHostHandle handle)                   { DKVRHOST(handle)->Run(); }
 void __stdcall dkvrStopHost(DKVRHostHandle handle)                  { DKVRHOST(handle)->Stop(); }
