@@ -1,3 +1,3 @@
 #pragma once
 
-#define DKVR_HOST_VERSION	1001
+#define DKVR_HOST_VERSION	1002

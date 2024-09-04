@@ -445,6 +445,7 @@
     <ClInclude Include="lib\Eigen\Cholesky">
       <FileType>CppHeader</FileType>
     </ClInclude>
+    <None Include="cpp.hint" />
     <None Include="lib\Eigen\COPYING.MPL2" />
     <ClInclude Include="lib\Eigen\Core">
       <FileType>CppHeader</FileType>

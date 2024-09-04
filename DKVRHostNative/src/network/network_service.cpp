@@ -16,9 +16,9 @@ namespace dkvr {
 
     namespace
     {
-#ifdef DKVR_SYSTEM_BIG_ENDIAN
-        void BigEndianBitConversion(Instruction& inst)
+        void DoBitConversionIfRequired(Instruction& inst)
         {
+#ifdef DKVR_SYSTEM_BIG_ENDIAN
             // bit reverse for sequence number
             char* seq_ptr = reinterpret_cast<char*>(&inst.sequence);
             std::reverse(seq_ptr, seq_ptr + sizeof(uint32_t));
@@ -31,8 +31,9 @@ namespace dkvr {
                 for (int i = 0; i < inst.length; i += inst.align)
                     std::reverse(payload_ptr + i, payload_ptr + i + inst.align);
             }
-        }
 #endif
+        }
+
         bool IsPowerOf2(uint8_t num) { return !(num & (num - 1)); }
     }
 
@@ -73,9 +74,7 @@ namespace dkvr {
         {
             Datagram&& dgram = udp_->PopReceived();
             memcpy_s(&out, sizeof(Instruction), &dgram.buffer, sizeof(Instruction));
-#ifdef DKVR_SYSTEM_BIG_ENDIAN
-            BigEndianBitConversion(out);
-#endif
+            DoBitConversionIfRequired(out);
             return dgram.address;
         }
         else
@@ -84,9 +83,7 @@ namespace dkvr {
 
     void NetworkService::Send(unsigned long address, Instruction& inst)
     {
-#ifdef DKVR_SYSTEM_BIG_ENDIAN
-        BigEndianBitConversion(inst);
-#endif
+        DoBitConversionIfRequired(inst);
         if (udp_->PushSending(Datagram{ address, inst }))
             logger_.Error("[Network Service] Instruction queuing failed : internal UDP Server not bounded.");
     }

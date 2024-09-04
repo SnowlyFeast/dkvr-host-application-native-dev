@@ -8,13 +8,11 @@
 
 namespace dkvr
 {
-	namespace
-	{
-		constexpr size_t kMessageLength = sizeof(Instruction::payload) - sizeof(uint32_t) - sizeof(uint8_t);
-	}
 
 	struct TrackerDebug
 	{
+		static constexpr size_t kMessageLength = sizeof(Instruction::payload) - sizeof(uint32_t) - sizeof(uint8_t);
+
 		uint32_t timestamp;
 		uint8_t dkvr_err;
 		char msg[kMessageLength];

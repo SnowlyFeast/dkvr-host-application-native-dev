@@ -910,5 +910,6 @@
   <ItemGroup>
     <None Include="lib\fmt\LICENSE" />
     <None Include="lib\Eigen\COPYING.MPL2" />
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

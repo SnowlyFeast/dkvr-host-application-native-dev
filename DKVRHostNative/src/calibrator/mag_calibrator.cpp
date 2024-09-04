@@ -23,6 +23,11 @@ namespace dkvr
 		}
 	}
 
+	void MagCalibrator::Reset()
+	{
+		mag_samples.clear();
+	}
+
 	void MagCalibrator::Accumulate(SampleType type, const std::vector<RawDataSet>& samples)
 	{
 		constexpr size_t limit = 300;
@@ -43,7 +48,6 @@ namespace dkvr
 		else if (type == SampleType::Rotational)
 		{
 			// prepare well-spaced samples
-			std::vector<Eigen::Vector3f> mag_samples;
 			mag_samples.emplace_back(samples[0].mag[0], samples[0].mag[1], samples[0].mag[2]);
 			for (int i = 1; i < samples.size(); i++)
 			{
@@ -53,17 +57,20 @@ namespace dkvr
 				if (mag_samples.size() >= limit)
 					break;
 			}
-
-			// calculate calibration matrix
-			EllipsoidParameter param = EllipsoidEstimator::EstimateEllipsoid(mag_samples, noise_var_.norm());
-			Eigen::Matrix3f transform = param.GetTransformationMatrix();
-			Eigen::Vector3f offset = -transform * param.GetCenterVector();
-
-			result_.transform = transform;
-			result_.offset = offset;
-			CommonCalibrator::TransformNoiseVariance(noise_var_, result_);
 		}
 
+	}
+
+	void MagCalibrator::Calculate()
+	{
+		// calculate calibration matrix
+		EllipsoidParameter param = EllipsoidEstimator::EstimateEllipsoid(mag_samples, noise_var_.norm());
+		Eigen::Matrix3f transform = param.GetTransformationMatrix();
+		Eigen::Vector3f offset = -transform * param.GetCenterVector();
+
+		result_.transform = transform;
+		result_.offset = offset;
+		CommonCalibrator::TransformNoiseVariance(noise_var_, result_);
 	}
 
 }	// namespace dkvr

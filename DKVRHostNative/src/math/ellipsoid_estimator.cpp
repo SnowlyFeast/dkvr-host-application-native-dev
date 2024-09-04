@@ -57,7 +57,7 @@ namespace dkvr {
 		for (int p = 0; p < 10; p++)
 			for (int q = p; q < 10; q++) {
 				float total = 0;
-				for (unsigned long k = 0; k < size; k++) {
+				for (int k = 0; k < size; k++) {
 					float val = 1;
 					for (int i = 0; i < 3; i++) {
 						int deg = r[p][q][i];
@@ -85,8 +85,8 @@ namespace dkvr {
 		if (solver.info() != Eigen::Success)
 			return EllipsoidParameter(Eigen::Matrix3f{ {1, 0, 0}, {0, 1, 0}, {0, 0, 1} }, Eigen::Vector3f(0, 0, 0), 0.0f);
 
-		auto max = std::max_element(solver.eigenvalues().begin(), solver.eigenvalues().end());
-		int index = std::distance(solver.eigenvalues().begin(), max);
+		auto min = std::min_element(solver.eigenvalues().begin(), solver.eigenvalues().end());
+		size_t index = std::distance(solver.eigenvalues().begin(), min);
 
 		Eigen::Vector<float, 10> b_als = solver.eigenvectors().col(index);
 		Eigen::Matrix3f a{ 

@@ -8,7 +8,6 @@
 #include "instruction/instruction_set.h"
 
 #include "tracker/tracker.h"
-#include "tracker/tracker_info.h"
 
 namespace dkvr {
 
@@ -22,8 +21,9 @@ namespace dkvr {
 		Instruction BuildInstruction(InstructionHint hint, uint32_t seq, const void* payload)
 		{
 			Instruction inst = hint.ToInstruction();
+			inst.sequence = seq;
 			if (payload != nullptr)
-				memcpy_s(inst.payload, sizeof(Instruction::payload), payload, hint.length());
+				memcpy_s(inst.payload, sizeof Instruction::payload, payload, hint.length());
 
 			return inst;
 		}
@@ -32,7 +32,12 @@ namespace dkvr {
 
 
 	TrackerUpdater::TrackerUpdater(NetworkService& net_service, TrackerProvider& tk_provider) :
-		thread_ptr_(nullptr), exit_flag_(false), now_(), net_service_(net_service), tk_provider_(tk_provider) { }
+		thread_ptr_(nullptr), 
+		exit_flag_(false), 
+		now_(), 
+		net_service_(net_service), 
+		tk_provider_(tk_provider) 
+	{ }
 
 	void TrackerUpdater::Run()
 	{
@@ -77,7 +82,7 @@ namespace dkvr {
 
 			UpdateHeartbeatAndRtt(target);
 			HandleUpdateRequired(target);
-			MatchConfigurationWithClient(target);
+			SyncConfigurationWithClient(target);
 		}
 	}
 
@@ -86,17 +91,17 @@ namespace dkvr {
 		switch (target->connection_status())
 		{
 		default:
-		case ConnectionStatus::Disconnected:
+		case Tracker::ConnectionStatus::Disconnected:
 			break;
 
-		case ConnectionStatus::Handshaked:
+		case Tracker::ConnectionStatus::Handshaked:
 		{
 			Instruction inst = BuildInstruction(InstructionSet::Handshake2, target->send_sequence_num(), nullptr);
 			net_service_.Send(target->address(), inst);
 			break;
 		}
 
-		case ConnectionStatus::Connected:
+		case Tracker::ConnectionStatus::Connected:
 		{
 			using namespace std::chrono;
 
@@ -155,34 +160,36 @@ namespace dkvr {
 		}
 	}
 
-	void TrackerUpdater::MatchConfigurationWithClient(Tracker* target)
+	void TrackerUpdater::SyncConfigurationWithClient(Tracker* target)
 	{
-		if (!target->IsAllValid()) {
-			for (ConfigurationKey key : target->GetEveryInvalid()) {
+		using ConfigurationKey = TrackerConfiguration::ConfigurationKey;
+
+		if (!target->IsAllSynced()) {
+			for (ConfigurationKey key : target->GetEveryUnsynced()) {
 				Instruction inst{};
 				switch (key)
 				{
 				case ConfigurationKey::Behavior:
 				{
-					uint8_t behavior = target->behavior();
+					uint8_t behavior = target->behavior_encoded();
 					inst = BuildInstruction(InstructionSet::Behavior, target->send_sequence_num(), &behavior);
 					break;
 				}
 
 				case ConfigurationKey::GyrTransform:
-					inst = BuildInstruction(InstructionSet::CalibrationGr, target->send_sequence_num(), target->calibration_ref().gyr_transform);
+					inst = BuildInstruction(InstructionSet::CalibrationGr, target->send_sequence_num(), target->calibration_cref().gyr_transform);
 					break;
 
 				case ConfigurationKey::AccTransform:
-					inst = BuildInstruction(InstructionSet::CalibrationAc, target->send_sequence_num(), target->calibration_ref().acc_transform);
+					inst = BuildInstruction(InstructionSet::CalibrationAc, target->send_sequence_num(), target->calibration_cref().acc_transform);
 					break;
 
 				case ConfigurationKey::MagTransform:
-					inst = BuildInstruction(InstructionSet::CalibrationMg, target->send_sequence_num(), target->calibration_ref().mag_transform);
+					inst = BuildInstruction(InstructionSet::CalibrationMg, target->send_sequence_num(), target->calibration_cref().mag_transform);
 					break;
 
 				case ConfigurationKey::NoiseVariance:
-					inst = BuildInstruction(InstructionSet::NoiseVariance, target->send_sequence_num(), target->calibration_ref().gyr_noise_var);
+					inst = BuildInstruction(InstructionSet::NoiseVariance, target->send_sequence_num(), target->calibration_cref().noise_variance);
 					break;
 
 				default:
