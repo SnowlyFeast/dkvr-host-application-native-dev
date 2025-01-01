@@ -42,9 +42,6 @@ namespace dkvr
         void DoBitConversionIfRequired(Instruction& inst)
         {
 #ifdef DKVR_SYSTEM_BIG_ENDIAN
-        void BigEndianBitConversion(Instruction& inst)
-        {
-#ifdef DKVR_SYSTEM_BIG_ENDIAN
             // bit reverse for sequence number
             char* seq_ptr = reinterpret_cast<char*>(&inst.sequence);
             std::reverse(seq_ptr, seq_ptr + sizeof(uint32_t));
