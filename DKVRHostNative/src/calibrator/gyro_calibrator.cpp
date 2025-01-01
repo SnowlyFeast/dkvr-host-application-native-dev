@@ -11,6 +11,32 @@
 
 namespace dkvr
 {
+
+	namespace
+	{
+        //constexpr float kDegToRad = 2.0 * EIGEN_PI / 360.0;
+        //constexpr float kRadToDeg = 1.0 / kDegToRad;
+
+		Eigen::Vector3f TransformSample(const CalibrationMatrix& calib, const Vector3f& sample)
+		{
+			Eigen::Vector3f s(sample[0], sample[1], sample[2]);
+			return calib.transform * s + calib.offset;
+		}
+
+		Eigen::Matrix3f SkewSymmetrize(Eigen::Vector3f vec)
+		{
+			return Eigen::Matrix3f{
+				{      0  , -vec.z(),  vec.y() },
+				{  vec.z(),      0  , -vec.x() },
+				{ -vec.y(),  vec.x(),      0   }
+			};
+		}
+
+		Eigen::Vector3f ThetaFunction(Eigen::Vector3f calibrated_gyr, Eigen::Vector3f old_mag, float time_step)
+		{
+			return (Eigen::Matrix3f::Identity() - time_step * SkewSymmetrize(calibrated_gyr))* old_mag;
+		}
+	}
 	
 	void GyroCalibrator::Reset()
 	{
@@ -33,6 +59,14 @@ namespace dkvr
 				vec.emplace_back(samples[i].gyr[0], samples[i].gyr[1], samples[i].gyr[2]);
 
 			noise_var_ = CommonCalibrator::CalculateNoiseVariance(vec);
+
+			// set averaged as initial offset
+			Eigen::Vector3f avg{ 0, 0, 0 };
+			for (const Eigen::Vector3f& s : vec)
+				avg += s;
+			avg /= vec.size();
+
+			result_.offset = -avg;
 		}
 		// only interested with rotational samples
 		else if (type == SampleType::Rotational)
@@ -50,10 +84,32 @@ namespace dkvr
 		int sample_size = samples.size() - 1;
 
 		// create sample set
-		std::vector<SampleTuple> sample_set;
-		sample_set.reserve(sample_size);
-		for (int i = 0; i < sample_size; i++)
-			sample_set.emplace_back(samples[i + 1].gyr, samples[i].mag, samples[i + 1].mag);
+		samples_.clear();
+		samples_.reserve(sample_size);
+
+		Eigen::Vector3f gyr_k1{ uncalibrated_set_[1].gyr[0], uncalibrated_set_[1].gyr[1], uncalibrated_set_[1].gyr[2] };
+		Eigen::Vector3f mag_k0 = TransformSample(mag_calib_, uncalibrated_set_[0].mag);
+		Eigen::Vector3f mag_k1 = TransformSample(mag_calib_, uncalibrated_set_[1].mag);
+		samples_.emplace_back(gyr_k1, mag_k0, mag_k1);
+
+		for (int i = 2; i < sample_size; i++)
+		{
+			Eigen::Vector3f gyr{ uncalibrated_set_[i].gyr[0], uncalibrated_set_[i].gyr[1], uncalibrated_set_[i].gyr[2] };
+			Eigen::Vector3f& old_mag = samples_.back().new_mag;
+			Eigen::Vector3f new_mag = TransformSample(mag_calib_, uncalibrated_set_[i].mag);
+			samples_.emplace_back(gyr, old_mag, new_mag);
+		}
+
+		RunGradientDescent();
+
+		// post process
+		CommonCalibrator::TransformNoiseVariance(noise_var_, result_);
+		calculating_ = false;
+	}
+
+	void GyroCalibrator::RunGradientDescent()
+	{
+		int sample_size = samples_.size();
 
 		// iterate
 		std::default_random_engine rng = std::default_random_engine{};

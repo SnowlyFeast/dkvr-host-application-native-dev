@@ -9,37 +9,41 @@
 
 namespace dkvr {
 
-	class Tracker
-	{
-	public:
-		Tracker(unsigned long address) :
-			info_{ .address = address, .name = "unknown tracker", .connection = ConnectionStatus::Disconnected },
-			netstat_{},
-			status_{},
-			statistic_{},
-			behavior_{},
-			calib_{},
-			validator_(),
-			data_{}
-		{
-			behavior_.Reset();
-			calib_.Reset();
-		}
+    class Tracker
+    {
+    public:
+        __pragma(dkvr_export) enum class ConnectionStatus
+        {
+            Disconnected,
+            Handshaked,
+            Connected
+        };
 
-		void Reset()
-		{
-			info_.connection = ConnectionStatus::Disconnected;
-			netstat_ = TrackerNetworkStatistics{ 0, 0, };
-			status_ = TrackerStatus{};
-			statistic_ = TrackerStatistic{};
-			validator_.InvalidateAll();
-			data_ = TrackerData{};
-			raw_data_updated_ = false;
-			orientation_updated_ = false;
-			statistic_update_required_ = false;
-			status_update_required_ = false;
-			locate_required_ = false;
-		}
+    private:
+        using ConfigurationKey = TrackerConfiguration::ConfigurationKey;
+
+    public:
+        Tracker(unsigned long address) :
+            address_(address), name_("unnamed tracker"), connection_(ConnectionStatus::Disconnected),
+            netstat_{},
+            status_{},
+            statistic_{},
+            config_{},
+            data_{}
+        {
+            config_.Reset();
+        }
+
+        void Reset()
+        {
+            connection_ = ConnectionStatus::Disconnected;
+            netstat_ = TrackerNetworkStatistics{ 0, 0, };
+            status_ = TrackerStatus{};
+            statistic_ = TrackerStatistic{};
+            data_ = TrackerData{};
+            config_.InvalidateAll();
+            ResetRequestIndicator();
+        }
 
 		// tracker information
 		unsigned long address() const { return info_.address; }
@@ -95,10 +99,10 @@ namespace dkvr {
 		bool raw() const { return behavior_.raw; }
 		bool led() const { return behavior_.led; }
 
-		void set_behavior(uint8_t behavior) { behavior_.Decode(behavior); validator_.InvalidateBehavior(); }
-		void set_active(bool active) { behavior_.active = active; validator_.InvalidateBehavior(); }
-		void set_raw(bool raw) { behavior_.raw = raw; validator_.InvalidateBehavior(); }
-		void set_led(bool led) { behavior_.led = led; validator_.InvalidateBehavior(); }
+        void set_behavior_led(bool on)      { config_.set_led(on); }
+        void set_behavior_active(bool on)   { config_.set_active(on); }
+        void set_behavior_raw(bool on)      { config_.set_raw(on); }
+        void set_behavior_nominal(bool on)  { config_.set_nominal(on); }
 
 		// calibration
 		TrackerCalibration calibration() const { return calib_; }

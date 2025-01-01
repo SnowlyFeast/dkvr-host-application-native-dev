@@ -1,45 +1,41 @@
 #include "controller/instruction_dispatcher.h"
 
-#include <thread>
-
 #include "instruction/instruction_set.h"
 
 namespace dkvr {
 
-	InstructionDispatcher::InstructionDispatcher(NetworkService& net_service, TrackerProvider& tk_provider)
-		: thread_ptr_(nullptr), exit_flag_(false), inst_handle_(), net_service_(net_service), tk_provider_(tk_provider) { }
+	InstructionDispatcher::InstructionDispatcher(NetworkService& net_service, TrackerProvider& tk_provider): 
+		inst_handler_(),
+		dispatcher_thread_(*this),
+		net_service_(net_service), 
+		tk_provider_(tk_provider) 
+	{ 
+		dispatcher_thread_ += &InstructionDispatcher::WaitReceiveAndDispatch;
+	}
 
 	void InstructionDispatcher::Run()
 	{
-		if (thread_ptr_)
-			return;
+		dispatcher_thread_.Run();
+		logger_.Debug("Dispatcher thread launched.");
 
-		logger_.Debug("Launching dispatcher thread.");
-		exit_flag_ = false;
-		thread_ptr_ = std::make_unique<std::thread>(&InstructionDispatcher::DispatcherThreadLoop, this);
 	}
 
 	void InstructionDispatcher::Stop()
 	{
-		if (thread_ptr_) 
-		{
-			exit_flag_ = true;
-			net_service_.RequestWakeup();
-			thread_ptr_->join();
-			thread_ptr_.reset();
-			logger_.Debug("Dispatcher thread successfully closed.");
-		}
+        // because WaitAndPopReceived needs wakeup,
+        // asynchronously call Stop() and send wakeup signal
+		dispatcher_thread_.StopAsync();
+        net_service_.RequestWakeup();
+		while (dispatcher_thread_.IsRunning());	// just spin lock cuz there's nothing to do
+        logger_.Debug("Dispatcher thread closed.");
 	}
 
-	void InstructionDispatcher::DispatcherThreadLoop()
+	void InstructionDispatcher::WaitReceiveAndDispatch()
 	{
-		Instruction inst{ };
-		while (!exit_flag_) 
-		{
-			unsigned long address = net_service_.WaitAndPopReceived(inst);
-			if (address)
-				Dispatch(address, inst);
-		}
+		unsigned long address;
+		Instruction inst;
+		if (net_service_.WaitAndPopReceived(address, inst))
+			Dispatch(address, inst);
 	}
 
 	void InstructionDispatcher::Dispatch(unsigned long address, Instruction& inst)
@@ -67,7 +63,7 @@ namespace dkvr {
 		}
 
 		// delegate to controller
-		inst_handle_.Handle(target, inst);
+		inst_handler_.Handle(target, inst);
 
 		// update recv_sequence only on connected status
 		if (target->IsConnected())

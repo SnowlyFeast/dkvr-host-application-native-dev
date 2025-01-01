@@ -1,13 +1,11 @@
 #pragma once
 
-#include <atomic>
 #include <chrono>
-#include <memory>
-#include <thread>
 
 #include "network/network_service.h"
 #include "tracker/tracker_provider.h"
 #include "util/logger.h"
+#include "util/thread_container.h"
 
 namespace dkvr {
 
@@ -20,17 +18,16 @@ namespace dkvr {
 		void Stop();
 
 	private:
-		void UpdaterThreadLoop();
 		void UpdateTracker();
 
 		void UpdateConnection(Tracker* target);
 		void UpdateHeartbeatAndRtt(Tracker* target);
 		void HandleUpdateRequired(Tracker* target);
-		void MatchConfigurationWithClient(Tracker* target);
+		void SyncConfigurationWithClient(Tracker* target);
+		void UpdateStatusAndStatistic(Tracker* target);
 
-		std::unique_ptr<std::thread> thread_ptr_;
-		std::atomic_bool exit_flag_;
 		std::chrono::steady_clock::time_point now_;
+		ThreadContainer<TrackerUpdater> updater_thread_;
 
 		NetworkService& net_service_;
 		TrackerProvider& tk_provider_;

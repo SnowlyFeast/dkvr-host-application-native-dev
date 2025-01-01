@@ -1,0 +1,19 @@
+
+-----------------------------------------------------------------------------
+version 1003
+
+# dkvr_host.h
+- add enum DKVRLoggerMode
+- add dkvrLoggerSetLoggerMode(HANDLE, DKVRLoggerMode)
+- add dkvrLoggerSetLoggerOutput(HANDLE, std::ostream&)
+
+# dkvr_host.cpp
+- add back-compatibility version check logic
+- settng logger output now disable internal logger(sstream) and set mode_ to Mode::Echo
+- if internal logger is disabled, GetUncheckedLogOne() and GetUncheckedLogAll() return empty string
+
+
+-----------------------------------------------------------------------------
+version 1002
+
+- initial version

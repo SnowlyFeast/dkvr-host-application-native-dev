@@ -10,10 +10,10 @@
 
 namespace dkvr
 {
-	/// <summary>
-	/// <para>Just simple interface for consistent-looking calibrator.</para>
-	/// <para>Nothing more.</para>
-	/// </summary>
+	 /// <summary>
+	 /// <para>Just simple interface for consistent-looking calibrator.</para>
+	 /// <para>Nothing more.</para>
+	 /// </summary>
 	class Calibrator
 	{
 	public:

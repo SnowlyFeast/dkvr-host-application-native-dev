@@ -90,7 +90,9 @@ namespace dkvr
 				thread_ptr_->join();
 			thread_ptr_.reset();
 		}
-
+		
+		status_ = CalibratorStatus::Recording;
+		progress_perc_ = 0;
 		thread_ptr_ = std::make_unique<std::thread>(&CalibrationManager::RecordingThreadLoop, this);
 	}
 
@@ -199,7 +201,7 @@ namespace dkvr
 
 	void CalibrationManager::ConfiguringThreadLoop()
 	{
-		constexpr uint8_t behavior = TrackerBehavior{ .active = false, .raw = true, .led = true }.Encode();
+		constexpr TrackerBehavior behavior{ .led = true, .active = true, .raw = true, .nominal = false };
 		constexpr TrackerCalibration calibration = {
 			// column-major
 			.gyr_transform = { 1, 0, 0,   0, 1, 0,   0, 0, 1,   0, 0, 0 },
@@ -239,8 +241,6 @@ namespace dkvr
 
 	void CalibrationManager::RecordingThreadLoop()
 	{
-		status_ = CalibrationStatus::Recording;
-
 		// begin sample record
 		samples_.clear();
 		while (!exit_flag_)

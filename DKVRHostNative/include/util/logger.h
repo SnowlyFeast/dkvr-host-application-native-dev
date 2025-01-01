@@ -31,13 +31,13 @@ namespace dkvr {
 	class Logger
 	{
 	public:
-		enum class Level {
+		__pragma(dkvr_export) enum class Level {
 			Error,
 			Info,
 			Debug
 		};
 
-		enum class Mode {
+		__pragma(dkvr_export) enum class Mode {
 			Echo,	// print logs to the console immediately
 			Burst,	// hold logs ultil explicitly call PrintUnchecked()
 			Silent	// all logs will automatically checked (ignored)

@@ -39,9 +39,6 @@
     <ClInclude Include="include\network\datagram.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="include\network\net_result.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="include\util\logger.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -112,9 +109,6 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="export\dkvr_host.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="include\version.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="include\tracker\tracker_statistic.h">
@@ -847,6 +841,12 @@
     <ClInclude Include="include\tracker\tracker_debug.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="include\util\hash.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="include\util\thread_container.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\network\winsock2_udp_server.cpp">
@@ -910,5 +910,8 @@
   <ItemGroup>
     <None Include="lib\fmt\LICENSE" />
     <None Include="lib\Eigen\COPYING.MPL2" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="export\changelog.txt" />
   </ItemGroup>
 </Project>

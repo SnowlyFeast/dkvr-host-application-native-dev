@@ -46,7 +46,7 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -137,6 +137,8 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -160,7 +162,8 @@
     <ClInclude Include="include\math\ellipsoid_estimator.h" />
     <ClInclude Include="include\tracker\tracker_debug.h" />
     <ClInclude Include="include\tracker\tracker_statistic.h" />
-    <ClInclude Include="include\version.h" />
+    <ClInclude Include="include\util\thread_container.h" />
+    <ClInclude Include="include\util\hash.h" />
     <ClInclude Include="lib\Eigen\src\Cholesky\LDLT.h" />
     <ClInclude Include="lib\Eigen\src\Cholesky\LLT.h" />
     <ClInclude Include="lib\Eigen\src\Cholesky\LLT_LAPACKE.h" />
@@ -410,7 +413,6 @@
     <ClInclude Include="include\tracker\tracker_provider.h" />
     <ClInclude Include="include\tracker\tracker_status.h" />
     <ClInclude Include="include\util\logger.h" />
-    <ClInclude Include="include\network\net_result.h" />
     <ClInclude Include="include\network\udp_server.h" />
     <ClInclude Include="include\network\network_service.h" />
     <ClInclude Include="include\network\datagram.h" />
@@ -474,6 +476,9 @@
       <FileType>CppHeader</FileType>
     </ClInclude>
     <None Include="lib\fmt\LICENSE" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="export\changelog.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

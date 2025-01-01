@@ -1,14 +1,11 @@
 #pragma once
 
-#include <atomic>
-#include <memory>
-#include <thread>
-
 #include "controller/instruction_handler.h"
 #include "instruction/instruction_format.h"
 #include "network/network_service.h"
 #include "tracker/tracker_provider.h"
 #include "util/logger.h"
+#include "util/thread_container.h"
 
 namespace dkvr {
 
@@ -21,12 +18,11 @@ namespace dkvr {
 		void Stop();
 
 	private:
-		void DispatcherThreadLoop();
+		void WaitReceiveAndDispatch();
 		void Dispatch(unsigned long address, Instruction& inst);
 
-		std::unique_ptr<std::thread> thread_ptr_;
-		std::atomic_bool exit_flag_;
-		InstructionHandler inst_handle_;
+		InstructionHandler inst_handler_;
+		ThreadContainer<InstructionDispatcher> dispatcher_thread_;
 
 		NetworkService& net_service_;
 		TrackerProvider& tk_provider_;

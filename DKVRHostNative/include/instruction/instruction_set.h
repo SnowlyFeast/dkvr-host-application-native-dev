@@ -31,7 +31,7 @@ namespace dkvr {
 		// data transfer op
 		Status			= 0x31,
 		Raw				= 0x32,
-		Orientation		= 0x33,
+		Nominal			= 0x33,
 		Statistic		= 0x34,
 		Debug			= 0x3F
 	};
@@ -81,8 +81,8 @@ namespace dkvr {
 		static constexpr InstructionHint NoiseVariance{ Opcode::NoiseVariance, 4, 9 };
 
 		static constexpr InstructionHint Status{ Opcode::Status, 0, 0 };
-		static constexpr InstructionHint ImuRaw{ Opcode::Raw, 0, 0 };
-		static constexpr InstructionHint ImuQuat{ Opcode::Orientation, 0, 0 };
+		static constexpr InstructionHint Raw{ Opcode::Raw, 0, 0 };
+		static constexpr InstructionHint Nominal{ Opcode::Nominal, 0, 0 };
 		static constexpr InstructionHint Statistic{ Opcode::Statistic, 0, 0 };
 		static constexpr InstructionHint Debug{ Opcode::Debug, 0, 0 };
 	};

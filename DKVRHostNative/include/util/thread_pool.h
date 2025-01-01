@@ -8,35 +8,33 @@
 #include <vector>
 
 namespace dkvr {
-	namespace util {
 
-		class ThreadPool
-		{
-		public:
-			static ThreadPool& GetInstance();
+	class ThreadPool
+	{
+	public:
+		static ThreadPool& GetInstance();
 
-			void Terminate();
-			void Queue(std::function<void()>&);
+		void Terminate();
+		void Queue(std::function<void()>&);
 
-			bool busy();
+		bool busy();
 
 
-		private:
-			ThreadPool(size_t size = 4);
-			ThreadPool(const ThreadPool&) = delete;
-			ThreadPool(ThreadPool&&) = delete;
-			virtual ~ThreadPool();
-			void operator= (const ThreadPool&) = delete;
-			void operator= (ThreadPool&&) = delete;
+	private:
+		ThreadPool(size_t size = 4);
+		ThreadPool(const ThreadPool&) = delete;
+		ThreadPool(ThreadPool&&) = delete;
+		virtual ~ThreadPool();
+		void operator= (const ThreadPool&) = delete;
+		void operator= (ThreadPool&&) = delete;
 
-			void ThreadLoop();
+		void ThreadLoop();
 
-			bool terminated_;
-			std::mutex mutex_;
-			std::condition_variable convar_;
-			std::vector<std::thread> threads_;
-			std::queue<std::function<void()>> tasks_;
-		};
+		bool terminated_;
+		std::mutex mutex_;
+		std::condition_variable convar_;
+		std::vector<std::thread> threads_;
+		std::queue<std::function<void()>> tasks_;
+	};
 
-	}	// namespace util
 }	// namespace dkvr

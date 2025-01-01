@@ -32,9 +32,12 @@ namespace dkvr
 		case Opcode::Locate:
 			Locate(target, inst); break;
 
-			// configuration
-		case Opcode::Behavior:
-			Behavior(target, inst); break;
+        case Opcode::ClientName:
+            ClientName(target, inst); break;
+
+            // configuration
+        case Opcode::Behavior:
+            Behavior(target, inst); break;
 
 		case Opcode::GyrTransform:
 			GyrTransform(target, inst); break;
@@ -56,8 +59,8 @@ namespace dkvr
 		case Opcode::Raw:
 			Raw(target, inst); break;
 
-		case Opcode::Orientation:
-			Orientation(target, inst); break;
+        case Opcode::Nominal:
+            Nominal(target, inst); break;
 
 		case Opcode::Statistic:
 			Statistic(target, inst); break;
@@ -132,11 +135,20 @@ namespace dkvr
 		logger_.Debug("Host-side opcode(Locate) received.");
 	}
 
-	void InstructionHandler::Behavior(Tracker* target, Instruction& inst)
-	{
-		if (target->IsConnected())
-			target->Validate(ConfigurationKey::Behavior);
-	}
+    void InstructionHandler::ClientName(Tracker* target, Instruction& inst)
+    {
+        if (target->IsConnected())
+            target->set_name(reinterpret_cast<char*>(inst.payload));
+    }
+
+    void InstructionHandler::Behavior(Tracker* target, Instruction& inst)
+    {
+        if (target->IsConnected())
+        {
+            if (inst.payload[0].uchar[0] == target->behavior_encoded())
+                target->SetBehaviorSynced();
+        }
+    }
 
 	void InstructionHandler::GyrTransform(Tracker* target, Instruction& inst)
 	{
@@ -156,11 +168,15 @@ namespace dkvr
 			target->Validate(ConfigurationKey::MagTransform);
 	}
 
-	void InstructionHandler::NoiseVariance(Tracker* target, Instruction& inst)
-	{
-		if (target->IsConnected()) 
-			target->Validate(ConfigurationKey::NoiseVariance);
-	}
+    void InstructionHandler::NoiseVariance(Tracker* target, Instruction& inst)
+    {
+        if (target->IsConnected())
+        {
+            uint8_t hash = Hash::Pearson(kCalibNoiseVarSize, target->calibration_cref().noise_variance);
+            if (hash == inst.payload[0].uchar[0])
+                target->SetNoiseVarianceSynced();
+        }
+    }
 
 	void InstructionHandler::Status(Tracker* target, Instruction& inst)
 	{

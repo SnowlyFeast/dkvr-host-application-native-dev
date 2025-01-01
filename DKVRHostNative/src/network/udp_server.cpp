@@ -7,40 +7,64 @@ namespace dkvr {
 	int UDPServer::Init()
 	{
 		int result = InternalInit();
-		status_ = result ? Status::InitFailed : Status::StandBy;
+
+		// InitFailed status is meaningless as NetworkService will just throw if result is non-zero
+		status_ = result ? Status::InitFailed : Status::StandBy;	
 
 		return result;
 	}
 
-	int UDPServer::Bind()
+	int UDPServer::Bind(unsigned long ip, unsigned short port)
 	{
-		if (status_ == Status::Running)
-			return NetResult::OK;
-		else if (status_ == Status::InitRequired)
-			return NetResult::InitRequired;
-		else if (status_ == Status::InitFailed)
-			return NetResult::InitFailed;
-		else if (status_ == Status::Closed)
-			return NetResult::ServerClosed;
+		// try handle the error
+		if (status_ == UDPServer::Status::Error)
+			if (!InternalHandleError())
+				status_ = UDPServer::Status::StandBy;
 
-		int result = InternalBind();
-		if (result) {
+		// check internal state
+		switch (status_)
+		{
+		default:
+		case UDPServer::Status::InitRequired:
+		case UDPServer::Status::InitFailed:
+		case UDPServer::Status::Disposed:
+		case UDPServer::Status::Error:
+			logger_.Error("UDP Server is not on bind() callable state : {}", static_cast<int>(status_));
+			return -1;
+
+		case UDPServer::Status::Running:
+			logger_.Info("UDP Server is already running.");
+			return 0;
+
+		case UDPServer::Status::StandBy:
+			break;
+		}
+
+		// run bind
+		set_host_ip(ip);
+		set_host_port(port);
+        int result = InternalBind();
+		if (result)
+		{
 			status_ = Status::Error;
+			logger_.Error("UDP Server binding failed.");
 		}
-		else {
-			status_ = Status::Running;
-			exit_flag_ = false;
-		}
+        else
+        {
+            status_ = Status::Running;
+        }
 
 		return result;
 	}
 
 	void UDPServer::Close()
 	{
-		exit_flag_ = true;
 		convar_.notify_all();
 		{
-			std::lock_guard<std::mutex> lock(mutex_);
+			// actually volatile keyword is not needed but just a little protection for compiler optimization
+			// tested at Compiler Explorer for MSVC v19 with '-O2' and GCC 14.2 with '-O3'
+			// generate same code with or without volatile
+			volatile std::lock_guard<std::mutex> lock(mutex_);
 		}
 		InternalClose();
 		status_ = Status::StandBy;
@@ -49,7 +73,7 @@ namespace dkvr {
 	void UDPServer::Deinit()
 	{
 		InternalDeinit();
-		status_ = Status::Closed;
+		status_ = Status::Disposed;
 	}
 
 	int UDPServer::PushSending(const Datagram& dgram)

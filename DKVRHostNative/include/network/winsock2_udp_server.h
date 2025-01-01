@@ -1,9 +1,5 @@
 #pragma once
 
-#include <atomic>
-#include <map>
-#include <memory>
-#include <thread>
 #ifdef _WIN32
 #	include <WinSock2.h>
 #else
@@ -12,6 +8,7 @@
 
 #include "network/udp_server.h"
 #include "util/logger.h"
+#include "util/thread_container.h"
 
 namespace dkvr {
 
@@ -29,18 +26,17 @@ namespace dkvr {
 
 	private:
 		void ParseWSAError(int wsa_error);
-		void NetworkThreadLoop();
+		void SendAndRecvMessage();
 
 		bool PeekRecv();
 		void HandleRecv();
 		bool PeekWritability();
 		void SendOneDatagram();
 
+		ThreadContainer<Winsock2UDPServer> winsock_thread_;
+
 		WSADATA wsa_data_;
 		SOCKET socket_;
-		std::unique_ptr<std::thread> net_thread_;
-		std::atomic_bool exit_flag_;
-		std::map<unsigned long, int> arrivals_;
 		unsigned long binding_ip_;
 
 		Logger& logger_ = Logger::GetInstance();

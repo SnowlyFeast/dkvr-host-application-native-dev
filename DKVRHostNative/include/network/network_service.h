@@ -1,14 +1,11 @@
 #pragma once
 
-#include <condition_variable>
-#include <list>
 #include <memory>
-#include <mutex>
-#include <queue>
 
 #include "network/datagram.h"
 #include "network/udp_server.h"
 #include "util/logger.h"
+#include "util/thread_container.h"
 
 namespace dkvr {
 
@@ -18,9 +15,9 @@ namespace dkvr {
 		NetworkService();
 		~NetworkService();
 
-		bool Run(unsigned short port = 8899);
+		bool Run(unsigned long ip = 0, unsigned short port = 8899u);
 		void Stop();
-		unsigned long WaitAndPopReceived(Instruction& out);
+		bool WaitAndPopReceived(unsigned long& address_out, Instruction& inst_out);
 		void Send(unsigned long address, Instruction& inst);
 		void RequestWakeup() { udp_->Wakeup(); }
 
@@ -30,7 +27,10 @@ namespace dkvr {
 		void operator= (const NetworkService&) = delete;
 		void operator= (NetworkService&&) = delete;
 
+		void CheckAndRepairService();
+
 		std::unique_ptr<UDPServer> udp_;
+		ThreadContainer<NetworkService> watchdog_thread_;
 
 		Logger& logger_ = Logger::GetInstance();
 	};
