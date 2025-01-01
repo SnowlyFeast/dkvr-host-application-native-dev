@@ -40,8 +40,10 @@ namespace dkvr
 	
 	void GyroCalibrator::Reset()
 	{
+		uncalibrated_set_.clear();
 		result_.transform.setIdentity();
 		result_.offset.setZero();
+		progress_perc_ = 0;
 	}
 
 	void GyroCalibrator::Accumulate(SampleType type, const std::vector<RawDataSet>& samples)
@@ -71,17 +73,14 @@ namespace dkvr
 		// only interested with rotational samples
 		else if (type == SampleType::Rotational)
 		{
-			Reset();
-			RunGradientDescent(samples);
-
-			// transform noise variance
-			CommonCalibrator::TransformNoiseVariance(noise_var_, result_);
+			uncalibrated_set_ = samples;
 		}
 	}
 
-	void GyroCalibrator::RunGradientDescent(const std::vector<RawDataSet>& samples)
+	void GyroCalibrator::Calculate()
 	{
-		int sample_size = samples.size() - 1;
+		calculating_ = true;
+		int sample_size = uncalibrated_set_.size();
 
 		// create sample set
 		samples_.clear();
@@ -116,7 +115,7 @@ namespace dkvr
 		for (int iter = 0; iter < iteration_; iter++)
 		{
 			// shuffle sample set
-			std::shuffle(sample_set.begin(), sample_set.end(), rng);
+			std::shuffle(samples_.begin(), samples_.end(), rng);
 
 			// stochastic gradient descendent
 			for (int idx = 0; idx < sample_size; idx += batch_size_)
@@ -125,39 +124,33 @@ namespace dkvr
 				gradient_.setZero();
 				int count = std::min(batch_size_, sample_size - idx);
 				for (int inc = 0; inc < count; inc++)
-					AddGradient(sample_set[idx + inc]);	// not averaged
+					AddGradient(samples_[idx + inc]);	// not averaged
 				gradient_ *= (learn_rate_ / count);
 
 				// apply gradient
-				Eigen::Matrix<float, 3, 4> result = gradient_.reshaped<Eigen::AutoOrder>(3, 4);
-				result_.transform += result.topLeftCorner<3, 3>();
-				result_.offset += result.col(3);
+				Eigen::Matrix<float, 3, 4> result = gradient_.reshaped(3, 4);
+				result_.transform -= result.topLeftCorner<3, 3>();
+				result_.offset -= result.col(3);
 			}
+
+			// set progress
+			progress_perc_ = static_cast<int>(iter * 100.0 / iteration_);
 		}
 	}
 
 	void GyroCalibrator::AddGradient(const SampleTuple& tuple)
 	{
-		Eigen::Vector3f cal = (result_.transform * tuple.gyro + result_.offset) * time_step_;
-		Eigen::Matrix3f rot{
-			{     1.0f,  cal.z(), -cal.y() },
-			{ -cal.z(),     1.0f,  cal.x() },
-			{  cal.y(), -cal.x(),     1.0f }
-		};
-		
-		Eigen::Vector3f djdp = (rot * tuple.old_mag - tuple.new_mag) * 2;
-		Eigen::Matrix3f dpdy{
-			{                  0, -tuple.old_mag.z(),  tuple.old_mag.y() },
-			{  tuple.old_mag.z(),                  0, -tuple.old_mag.x() },
-			{ -tuple.old_mag.y(),  tuple.old_mag.x(),                  0 }
-		};
-		Eigen::Matrix<float, 3, 12> dydw{
-			{ cal.x(), cal.y(), cal.z(), 1.0f,            0, 0, 0, 0,                      0, 0, 0, 0           },
-			{            0, 0, 0, 0,           cal.x(), cal.y(), cal.z(), 1.0f,            0, 0, 0, 0           },
-			{            0, 0, 0, 0,                      0, 0, 0, 0,           cal.x(), cal.y(), cal.z(), 1.0f },
-		};
+		Eigen::Vector3f calibrated_gyr = result_.transform * tuple.gyro + result_.offset;
 
-		gradient_ += djdp.transpose() * dpdy * dydw;
+		Eigen::Vector3f             dj_df = 2 * ThetaFunction(calibrated_gyr, tuple.old_mag, time_step_) - tuple.new_mag;
+		Eigen::Matrix3f             df_dw = time_step_ * SkewSymmetrize(tuple.old_mag);
+		Eigen::Matrix<float, 3, 12> dw_dt;
+		dw_dt.block<3, 3>(0, 0) = Eigen::Matrix3f::Identity() * tuple.gyro.x();
+		dw_dt.block<3, 3>(0, 3) = Eigen::Matrix3f::Identity() * tuple.gyro.y();
+		dw_dt.block<3, 3>(0, 6) = Eigen::Matrix3f::Identity() * tuple.gyro.z();
+		dw_dt.block<3, 3>(0, 9) = Eigen::Matrix3f::Identity();
+
+		gradient_ += dj_df.transpose() * df_dw * dw_dt;
 	}
 
 }	// namespace dkvr

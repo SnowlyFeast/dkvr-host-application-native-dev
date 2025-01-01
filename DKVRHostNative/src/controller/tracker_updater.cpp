@@ -6,7 +6,6 @@
 #include "instruction/instruction_set.h"
 
 #include "tracker/tracker.h"
-#include "tracker/tracker_info.h"
 
 namespace dkvr 
 {

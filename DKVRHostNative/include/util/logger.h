@@ -46,6 +46,9 @@ namespace dkvr {
 		static Logger& GetInstance();
 
 		template<typename... Args>
+		static std::string FormatString(const fmt::format_string<Args...> fmt, Args&&... args);
+
+		template<typename... Args>
 		void Error(const fmt::format_string<Args...> fmt, Args&&... args);
 		template<typename... Args>
 		void Info(const fmt::format_string<Args...> fmt, Args&&... args);
@@ -86,6 +89,12 @@ namespace dkvr {
 		Level level_;
 		Mode mode_;
 	};
+
+	template<typename... Args>
+	static std::string Logger::FormatString(const fmt::format_string<Args...> fmt, Args&&... args)
+	{
+		return fmt::vformat(fmt.get(), fmt::make_format_args(args...));
+	}
 
 	template<typename... Args>
 	inline void Logger::Error(const fmt::format_string<Args...> fmt, Args&&... args)

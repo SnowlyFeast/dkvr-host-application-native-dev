@@ -39,9 +39,11 @@ extern "C" {
     struct DKVRQuaternion { float w, x, y, z; };
     struct DKVRCalibration { float gyr_transform[12], acc_transform[12], mag_transform[12], noise_variance[9]; };
 
-	// version
-	DLLEXPORT void __stdcall dkvrVersion(int* out);
-	DLLEXPORT void __stdcall dkvrAssertVersion(int version, int* success);
+    typedef void* DKVRHostHandle;
+
+    // version
+    DLLEXPORT void __stdcall dkvrGetVersion(int* out);
+    DLLEXPORT void __stdcall dkvrAssertVersion(int version, int* success);
 
     // instance control
     DLLEXPORT void __stdcall dkvrCreateInstance	(DKVRHostHandle* hptr, char* msg, int len);
@@ -96,19 +98,20 @@ extern "C" {
     DLLEXPORT void __stdcall dkvrTrackerGetLinearAcceleration(DKVRHostHandle handle, int index, struct DKVRVector3* out);
     DLLEXPORT void __stdcall dkvrTrackerGetMagneticDisturbance(DKVRHostHandle handle, int index, struct DKVRVector3* out);
 
-	DLLEXPORT void __stdcall dkvrTrackerRequestStatistic(DKVRHostHandle handle, int index);
-	DLLEXPORT void __stdcall dkvrTrackerRequestStatus(DKVRHostHandle handle, int index);
-	DLLEXPORT void __stdcall dkvrTrackerRequestLocate(DKVRHostHandle handle, int index);
+    DLLEXPORT void __stdcall dkvrTrackerRequestLocate       (DKVRHostHandle handle, int index);
+    DLLEXPORT void __stdcall dkvrTrackerRequestStatus       (DKVRHostHandle handle, int index);
+    DLLEXPORT void __stdcall dkvrTrackerRequestStatistic	(DKVRHostHandle handle, int index);
 
-	// calibrator
-	DLLEXPORT void __stdcall dkvrCalibratorGetStatus(DKVRHostHandle handle, int* out);
-	DLLEXPORT void __stdcall dkvrCalibratorGetStatusString(DKVRHostHandle handle, char* out, int len);
-	DLLEXPORT void __stdcall dkvrCalibratorGetRequiredSampleType(DKVRHostHandle handle, int* out);
-	DLLEXPORT void __stdcall dkvrCalibratorGetRequiredSampleTypeString(DKVRHostHandle handle, char* out, int len);
-	DLLEXPORT void __stdcall dkvrCalibratorGetCurrentTarget(DKVRHostHandle handle, int* out);
-	DLLEXPORT void __stdcall dkvrCalibratorBeginWith(DKVRHostHandle handle, int index);
-	DLLEXPORT void __stdcall dkvrCalibratorAbort(DKVRHostHandle handle);
-	DLLEXPORT void __stdcall dkvrCalibratorContinue(DKVRHostHandle handle);
+    // calibrator
+    DLLEXPORT void __stdcall dkvrCalibratorGetStatus        (DKVRHostHandle handle, int* out);
+    DLLEXPORT void __stdcall dkvrCalibratorGetSampleType    (DKVRHostHandle handle, int* out);
+    DLLEXPORT void __stdcall dkvrCalibratorGetStatusString  (DKVRHostHandle handle, char* out, int len);
+    DLLEXPORT void __stdcall dkvrCalibratorGetSampleTypeString(DKVRHostHandle handle, char* out, int len);
+    DLLEXPORT void __stdcall dkvrCalibratorGetProgress      (DKVRHostHandle handle, int* out);
+    DLLEXPORT void __stdcall dkvrCalibratorGetCurrentTarget (DKVRHostHandle handle, int* out);
+    DLLEXPORT void __stdcall dkvrCalibratorBeginWith        (DKVRHostHandle handle, int index);
+    DLLEXPORT void __stdcall dkvrCalibratorAbort            (DKVRHostHandle handle);
+    DLLEXPORT void __stdcall dkvrCalibratorContinue         (DKVRHostHandle handle);
 
 #ifdef __cplusplus
 }

@@ -26,7 +26,7 @@ namespace dkvr
 	class CalibrationManager
 	{
 	public:
-		enum class CalibrationStatus
+		enum class CalibratorStatus
 		{
 			Idle,
 			Configuring,
@@ -46,8 +46,9 @@ namespace dkvr
 
 		int GetCurrentCalibrationTarget() const { return target_index_; }
 
-		CalibrationStatus GetStatus() const { return status_; }
+		CalibratorStatus GetStatus() const { return status_; }
 		SampleType GetRequiredSampleType() const { return sample_type_; }
+		int GetProgressPercentage() const { return progress_perc_.load(); }
 
 		std::string GetStatusAsString() const;
 		std::string GetRequiredSampleTypeAsString() const;
@@ -68,12 +69,13 @@ namespace dkvr
 		std::atomic_bool exit_flag_;
 		
 		// calibration manager status
-		CalibrationStatus status_;
+		CalibratorStatus status_;
 		SampleType sample_type_;
+		std::atomic_int progress_perc_;
 
 		// tracker
 		int target_index_;
-		uint8_t saved_behavior_;
+		TrackerBehavior saved_behavior_;
 		TrackerCalibration saved_calibration_;
 		TrackerCalibration result_calibration_;
 

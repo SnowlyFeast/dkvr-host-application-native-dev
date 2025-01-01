@@ -16,14 +16,15 @@ namespace dkvr
 	public:
 		MagCalibrator() : result_(), noise_var_() { }
 
-		void Reset() override { }
+		void Reset() override;
 		void Accumulate(SampleType type, const std::vector<RawDataSet>& samples) override;
-		void Calculate() override { }
+		void Calculate() override;
 
 		CalibrationMatrix GetCalibrationMatrix() override { return result_; }
 		Eigen::Vector3f GetNoiseVairance() override { return noise_var_; }
 
 	private:
+		std::vector<Eigen::Vector3f> mag_samples;
 		CalibrationMatrix result_;
 		Eigen::Vector3f noise_var_;
 	};

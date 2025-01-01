@@ -78,18 +78,18 @@ namespace dkvr {
 		return v;
 	}
 
-	int TrackerProvider::GetCount() const
+	size_t TrackerProvider::GetCount() const
 	{
 		std::lock_guard<std::mutex> lock(mutex_);
 		return trackers_.size();
 	}
 
-	int TrackerProvider::GetIndexOf(const Tracker* target)
+	size_t TrackerProvider::GetIndexOf(const Tracker* target)
 	{
 		if (target == nullptr)
 			return -1;
 
-		int index = 0;
+		size_t index = 0;
 		std::lock_guard<std::mutex> lock(mutex_);
 		for (TrackerMutexPair& pair : trackers_)
 		{

@@ -23,8 +23,8 @@ namespace dkvr {
 		std::vector<AtomicTracker> GetAllTrackers();
 
 
-		int GetCount() const;
-		int GetIndexOf(const Tracker* target);
+		size_t GetCount() const;
+		size_t GetIndexOf(const Tracker* target);
 
 	private:
 		using TrackerMutexPair = std::pair<Tracker, std::shared_ptr<std::mutex>>;

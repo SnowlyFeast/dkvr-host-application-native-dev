@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <vector>
 
 #include "Eigen/Core"
@@ -23,6 +24,11 @@ namespace dkvr
 
 		virtual CalibrationMatrix GetCalibrationMatrix() = 0;
 		virtual Eigen::Vector3f GetNoiseVairance() = 0;
+
+		int GetProgress() const { return progress_perc_.load(); }
+
+	protected:
+		std::atomic_int progress_perc_ = 0;
 	};
 
 }	// namespace dkvr

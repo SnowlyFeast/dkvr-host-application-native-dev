@@ -7,9 +7,10 @@
 #include "util/logger.h"
 #include "util/thread_container.h"
 
-namespace dkvr {
+namespace dkvr 
+{
 
-	class NetworkService
+	class NetworkService final
 	{
 	public:
 		NetworkService();

@@ -2,7 +2,7 @@
 
 #include <type_traits>
 
-#include "controller/instruction_format.h"
+#include "instruction/instruction_format.h"
 
 namespace dkvr {
 

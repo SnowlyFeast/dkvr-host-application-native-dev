@@ -44,6 +44,7 @@ namespace dkvr
 #ifdef DKVR_SYSTEM_BIG_ENDIAN
         void BigEndianBitConversion(Instruction& inst)
         {
+#ifdef DKVR_SYSTEM_BIG_ENDIAN
             // bit reverse for sequence number
             char* seq_ptr = reinterpret_cast<char*>(&inst.sequence);
             std::reverse(seq_ptr, seq_ptr + sizeof(uint32_t));
@@ -56,8 +57,9 @@ namespace dkvr
                 for (int i = 0; i < inst.length; i += inst.align)
                     std::reverse(payload_ptr + i, payload_ptr + i + inst.align);
             }
-        }
 #endif
+        }
+
         bool IsPowerOf2(uint8_t num) { return !(num & (num - 1)); }
     }
 

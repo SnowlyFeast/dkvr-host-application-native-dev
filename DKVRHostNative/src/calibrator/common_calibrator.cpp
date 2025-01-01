@@ -21,12 +21,6 @@ namespace dkvr
 		return var;
 	}
 
-	void CommonCalibrator::TransformSamples(std::vector<Eigen::Vector3f>& samples, const CalibrationMatrix& calib)
-	{
-		for (Eigen::Vector3f& s : samples)
-			s = (calib.transform * s + calib.offset).eval();
-	}
-
 	void CommonCalibrator::TransformNoiseVariance(Eigen::Vector3f& noise_var, const CalibrationMatrix& calib)
 	{
 		Eigen::Array3f diag = calib.transform.diagonal();

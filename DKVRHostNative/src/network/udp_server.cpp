@@ -1,8 +1,7 @@
 #include "network/udp_server.h"
 
-#include "network/net_result.h"
-
-namespace dkvr {
+namespace dkvr 
+{
 
 	int UDPServer::Init()
 	{
@@ -79,13 +78,16 @@ namespace dkvr {
 	int UDPServer::PushSending(const Datagram& dgram)
 	{
 		if (status_ != Status::Running)
-			return NetResult::BindRequired;
+		{
+			logger_.Error("Call Bind() before push any dgram.");	// it's implementation problem
+			return 1;
+		}
 
 		{
 			std::lock_guard<std::mutex> lock(mutex_);
 			sending_.push(dgram);
 		}
-		return NetResult::OK;
+		return 0;
 	}
 
 	bool UDPServer::PeekSending() const

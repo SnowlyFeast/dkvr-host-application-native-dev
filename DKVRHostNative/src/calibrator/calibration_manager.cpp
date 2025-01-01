@@ -52,10 +52,10 @@ namespace dkvr
 		gyro_calibrator_(0.01f), 
 		accel_calibrator_(), 
 		mag_calibrator_(), 
-		status_(CalibrationStatus::StandBy), 
+		status_(CalibratorStatus::Idle), 
 		sample_type_(SampleType::ZNegative), 
 		target_index_(-1), 
-		saved_behavior_(TrackerBehavior::kBitmaskInvalid), 
+		saved_behavior_{ 0 },
 		saved_calibration_{}, 
 		thread_ptr_(nullptr), 
 		exit_flag_(false), 
@@ -64,6 +64,7 @@ namespace dkvr
 		tk_provider_(tk_provider)
 	{
 		samples_.reserve(kRequiredRotationalSampleSize);
+		Reset();
 	}
 
 	void CalibrationManager::Begin(int index)
@@ -81,7 +82,7 @@ namespace dkvr
 
 	void CalibrationManager::Continue()
 	{
-		if (status_ != CalibrationStatus::StandBy)
+		if (status_ != CalibratorStatus::StandBy)
 			return;
 
 		if (thread_ptr_)
@@ -98,7 +99,7 @@ namespace dkvr
 
 	void CalibrationManager::Abort()
 	{
-		if (status_ != CalibrationStatus::StandBy)
+		if (status_ != CalibratorStatus::Idle)
 		{
 			// stop thread
 			exit_flag_ = true;
@@ -110,7 +111,7 @@ namespace dkvr
 			}
 
 			// rollback tracker config
-			if (target_index_ != -1 && saved_behavior_ != TrackerBehavior::kBitmaskInvalid)
+			if (target_index_ != -1)
 			{
 				AtomicTracker target = tk_provider_.FindByIndex(target_index_);
 				target->set_behavior(saved_behavior_);
@@ -127,19 +128,19 @@ namespace dkvr
 	{
 		switch (status_)
 		{
-		case CalibrationStatus::Idle:
+		case CalibratorStatus::Idle:
 			return kStringIdle;
 
-		case CalibrationStatus::Configuring:
+		case CalibratorStatus::Configuring:
 			return kStringConfiguring;
 
-		case CalibrationStatus::StandBy:
+		case CalibratorStatus::StandBy:
 			return kStringStandBy;
 
-		case CalibrationStatus::Recording:
+		case CalibratorStatus::Recording:
 			return kStringRecording;
 
-		case CalibrationStatus::Calibrating:
+		case CalibratorStatus::Calibrating:
 			return kStringCalibrating;
 
 		default:
@@ -186,13 +187,14 @@ namespace dkvr
 		accel_calibrator_.Reset();
 		mag_calibrator_.Reset();
 
-		status_ = CalibrationStatus::StandBy;
+		status_ = CalibratorStatus::Idle;
 		sample_type_ = SampleType(0);
+		progress_perc_ = 0;
 
 		exit_flag_ = false;
 
 		target_index_ = -1;
-		saved_behavior_ = TrackerBehavior::kBitmaskInvalid;
+		saved_behavior_ = TrackerBehavior{ 0 };
 		saved_calibration_.Reset();
 		result_calibration_.Reset();
 
@@ -204,15 +206,13 @@ namespace dkvr
 		constexpr TrackerBehavior behavior{ .led = true, .active = true, .raw = true, .nominal = false };
 		constexpr TrackerCalibration calibration = {
 			// column-major
-			.gyr_transform = { 1, 0, 0,   0, 1, 0,   0, 0, 1,   0, 0, 0 },
-			.acc_transform = { 1, 0, 0,   0, 1, 0,   0, 0, 1,   0, 0, 0 },
-			.mag_transform = { 1, 0, 0,   0, 1, 0,   0, 0, 1,   0, 0, 0 },
-			.gyr_noise_var = { 0, 0, 0 },
-			.acc_noise_var = { 0, 0, 0 },
-			.mag_noise_var = { 0, 0, 0 }
+			.gyr_transform  = { 1, 0, 0,   0, 1, 0,   0, 0, 1,   0, 0, 0 },
+			.acc_transform  = { 1, 0, 0,   0, 1, 0,   0, 0, 1,   0, 0, 0 },
+			.mag_transform  = { 1, 0, 0,   0, 1, 0,   0, 0, 1,   0, 0, 0 },
+			.noise_variance = { 0, 0, 0,   0, 0, 0,   0, 0, 0 }
 		};
 
-		status_ = CalibrationStatus::Configuring;
+		status_ = CalibratorStatus::Configuring;
 
 		// configure target
 		{
@@ -226,21 +226,25 @@ namespace dkvr
 
 		while (!exit_flag_)
 		{
+			// TODO : configuring timeout
 			{
 				AtomicTracker target = tk_provider_.FindByIndex(target_index_);
-				if (target->IsAllValid())
+				if (target->IsAllSynced())
 					break;
 			}
 			// wait for validation
 			std::this_thread::sleep_for(kValidationInterval);
 		}
 
-		status_ = CalibrationStatus::StandBy;
+		status_ = CalibratorStatus::StandBy;
 		logger_.Debug("[Calibration] (Step1/8) Tracker configured.");
 	}
 
 	void CalibrationManager::RecordingThreadLoop()
 	{
+		status_ = CalibratorStatus::Recording;
+		progress_perc_ = 0;
+
 		// begin sample record
 		samples_.clear();
 		while (!exit_flag_)
@@ -266,6 +270,8 @@ namespace dkvr
 			if (sample_type_ == SampleType::Rotational)
 			{
 				samples_.push_back(data);
+
+				progress_perc_ = static_cast<int>((samples_.size() * 100.0 / kRequiredRotationalSampleSize));
 				if (samples_.size() >= kRequiredRotationalSampleSize)
 					break;
 			}
@@ -274,6 +280,8 @@ namespace dkvr
 				if (samples_.empty() || IsStaticConstraintSatisfied(data, samples_.back()))
 				{
 					samples_.push_back(data);
+
+					progress_perc_ = static_cast<int>((samples_.size() * 100.0 / kRequiredStaticSampleSize));
 					if (samples_.size() >= kRequiredStaticSampleSize)
 						break;
 				}
@@ -291,13 +299,13 @@ namespace dkvr
 		{
 			// record next samples
 			sample_type_ = SampleType(static_cast<int>(sample_type_) + 1);
-			status_ = CalibrationStatus::StandBy;
+			status_ = CalibratorStatus::StandBy;
 			logger_.Debug("[Calibration] (Step{}/8) Sample gathered.", static_cast<int>(sample_type_) + 1);
 		}
 		else
 		{
 			// recording finished
-			status_ = CalibrationStatus::Calibrating;
+			status_ = CalibratorStatus::Calibrating;
 			logger_.Debug("[Calibration] (Step8/8) Calibrating...");
 			ApplyCalibration();
 		}
@@ -312,9 +320,29 @@ namespace dkvr
 
 	void CalibrationManager::ApplyCalibration()
 	{
-		gyro_calibrator_.Calculate();
+		progress_perc_ = 0;
+
+		// calculate accel first (cuz it's the fastest)
+		logger_.Debug("[Calibration] Calculating accel calibration...");
 		accel_calibrator_.Calculate();
+
+		// gyro calibration requires calibrated mag samples
+		logger_.Debug("[Calibration] Calculating mag calibration...");
 		mag_calibrator_.Calculate();
+		gyro_calibrator_.SetMagCalibrationMatrix(mag_calibrator_.GetCalibrationMatrix());
+
+		// detatch the gyro calibration process and track it's progress
+		logger_.Debug("[Calibration] Calculating gyro calibration...");
+		std::thread gyr_thread(&GyroCalibrator::Calculate, &gyro_calibrator_);
+		while (gyr_thread.joinable())
+		{
+			progress_perc_ = gyro_calibrator_.GetProgress();
+
+			if (gyro_calibrator_.IsCalculationFinished())
+				gyr_thread.join();
+			else
+				std::this_thread::yield();
+		}
 
 		gyro_calibrator_.GetCalibrationMatrix().CopyTo(result_calibration_.gyr_transform);
 		accel_calibrator_.GetCalibrationMatrix().CopyTo(result_calibration_.acc_transform);
@@ -323,9 +351,9 @@ namespace dkvr
 		Eigen::Vector3f gyr_noise_var = gyro_calibrator_.GetNoiseVairance();
 		Eigen::Vector3f acc_noise_var = accel_calibrator_.GetNoiseVairance();
 		Eigen::Vector3f mag_noise_var = mag_calibrator_.GetNoiseVairance();
-		std::copy_n(gyr_noise_var.data(), 3, result_calibration_.gyr_noise_var);
-		std::copy_n(acc_noise_var.data(), 3, result_calibration_.acc_noise_var);
-		std::copy_n(mag_noise_var.data(), 3, result_calibration_.mag_noise_var);
+		std::copy_n(gyr_noise_var.data(), 3, result_calibration_.gyr_noise_var());
+		std::copy_n(acc_noise_var.data(), 3, result_calibration_.acc_noise_var());
+		std::copy_n(mag_noise_var.data(), 3, result_calibration_.mag_noise_var());
 
 		{
 			AtomicTracker target = tk_provider_.FindByIndex(target_index_);
@@ -337,18 +365,20 @@ namespace dkvr
 		{
 			{
 				AtomicTracker target = tk_provider_.FindByIndex(target_index_);
-				if (target->IsAllValid())
+				if (target->IsAllSynced())
 					break;
 			}
 			// wait for validation
 			std::this_thread::sleep_for(kValidationInterval);
+
+			// TODO: validation timeout
 		}
 
 		// aborted
 		if (exit_flag_)
 			return;
 
-		logger_.Debug("[Calibration] (9/9) Calibration finished.");
+		logger_.Debug("[Calibration] Calibration finished.");
 		logger_.Info("Calibration finished.");
 		Reset();
 	}

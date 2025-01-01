@@ -24,10 +24,13 @@ namespace dkvr
 			noise_var_()
 		{ }
 
+		bool IsCalculationFinished() const { return !calculating_; }
+
 		void Reset() override;
 		void Accumulate(SampleType type, const std::vector<RawDataSet>& samples) override;
-		void Calculate() override { }
+		void Calculate() override;
 		void SetTimeStep(float time_step) { time_step_ = time_step; }
+		void SetMagCalibrationMatrix(CalibrationMatrix calib) { mag_calib_ = calib; }
 
 		CalibrationMatrix GetCalibrationMatrix() override { return result_; }
 		Eigen::Vector3f GetNoiseVairance() override { return noise_var_; }
@@ -36,15 +39,10 @@ namespace dkvr
 	private:
 		struct SampleTuple
 		{
-			SampleTuple(const Vector3f& gyr, const Vector3f& old_mag, const Vector3f& new_mag) :
-				gyro{ gyr[0], gyr[1], gyr[2] },
-				old_mag{ old_mag[0], old_mag[1], old_mag[2] },
-				new_mag{ new_mag[0], new_mag[1], new_mag[2] } { }
-
 			Eigen::Vector3f gyro, old_mag, new_mag;
 		};
 
-		void RunGradientDescent(const std::vector<RawDataSet>& samples);
+		void RunGradientDescent();
 		void AddGradient(const SampleTuple& tuple);
 
 		float time_step_;
@@ -52,10 +50,15 @@ namespace dkvr
 		int batch_size_;
 		float learn_rate_;
 
-		Eigen::Matrix<float, 1, 12, Eigen::RowMajor> gradient_;
+		std::vector<RawDataSet> uncalibrated_set_;
+		std::vector<SampleTuple> samples_;
+		Eigen::Matrix<float, 1, 12> gradient_;
 
+		CalibrationMatrix mag_calib_;
 		CalibrationMatrix result_;
 		Eigen::Vector3f noise_var_;
+
+		std::atomic_bool calculating_ = false;
 	};
 
 }	// namespace dkvr

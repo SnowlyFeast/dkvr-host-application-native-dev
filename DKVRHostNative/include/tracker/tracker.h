@@ -2,7 +2,6 @@
 
 #include "tracker/tracker_configuration.h"
 #include "tracker/tracker_data.h"
-#include "tracker/tracker_info.h"
 #include "tracker/tracker_netstat.h"
 #include "tracker/tracker_statistic.h"
 #include "tracker/tracker_status.h"
@@ -45,122 +44,141 @@ namespace dkvr {
             ResetRequestIndicator();
         }
 
-		// tracker information
-		unsigned long address() const { return info_.address; }
-		std::string name() const { return info_.name; }
+        // tracker information
+        unsigned long address() const { return address_; }
+        std::string name() const { return name_; }
 
-		void set_name(std::string name) { info_.name = name; }
+        void set_name(std::string name) { name_ = std::move(name); }
 
-		// connection status
-		ConnectionStatus connection_status() const { return info_.connection; }
-		bool IsDisconnected() const { return info_.connection == ConnectionStatus::Disconnected; }
-		bool IsHandshaked() const { return info_.connection == ConnectionStatus::Handshaked; }
-		bool IsConnected() const { return info_.connection == ConnectionStatus::Connected; }
+        // connection status
+        ConnectionStatus connection_status() const { return connection_; }
+        bool IsDisconnected() const { return connection_ == ConnectionStatus::Disconnected; }
+        bool IsHandshaked() const   { return connection_ == ConnectionStatus::Handshaked; }
+        bool IsConnected() const    { return connection_ == ConnectionStatus::Connected; }
 
-		void SetDisconnected() { info_.connection = ConnectionStatus::Disconnected; }
-		void SetHandshaked() { info_.connection = ConnectionStatus::Handshaked; }
-		void SetConnected() { info_.connection = ConnectionStatus::Connected; }
+        void SetDisconnected()  { connection_ = ConnectionStatus::Disconnected; }
+        void SetHandshaked()    { connection_ = ConnectionStatus::Handshaked; }
+        void SetConnected()     { connection_ = ConnectionStatus::Connected; }
 
-		// network statistics
-		uint32_t send_sequence_num() { return netstat_.send_sequence_num++; }
-		uint32_t recv_sequence_num() const { return netstat_.recv_sequence_num; }
-		std::chrono::steady_clock::time_point last_heartbeat_sent() const { return netstat_.last_heartbeat_sent; }
-		std::chrono::steady_clock::time_point last_heartbeat_recv() const { return netstat_.last_heartbeat_recv; }
-		std::chrono::steady_clock::time_point last_ping_sent() const { return netstat_.last_ping_sent; }
-		long long rtt() const { return netstat_.rtt.count(); }
+        // network statistics
+        uint32_t send_sequence_num()        { return netstat_.send_sequence_num++; }
+        uint32_t recv_sequence_num() const  { return netstat_.recv_sequence_num; }
+        std::chrono::steady_clock::time_point last_heartbeat_sent() const   { return netstat_.last_heartbeat_sent; }
+        std::chrono::steady_clock::time_point last_heartbeat_recv() const   { return netstat_.last_heartbeat_recv; }
+        std::chrono::steady_clock::time_point last_ping_sent() const        { return netstat_.last_ping_sent; }
+        long long rtt() const               { return netstat_.rtt.count(); }
 
-		void set_recv_sequence_num(uint32_t seq) { netstat_.recv_sequence_num = seq; }
-		void UpdateHeartbeatSent() { netstat_.last_heartbeat_sent = std::chrono::steady_clock::now(); }
-		void UpdateHeartbeatRecv() { netstat_.last_heartbeat_recv = std::chrono::steady_clock::now(); }
-		void UpdatePingSent() { netstat_.last_ping_sent = std::chrono::steady_clock::now(); }
-		void UpdateRtt()
-		{
-			using namespace std::chrono;
-			nanoseconds rtt = steady_clock::now() - netstat_.last_ping_sent;
-			netstat_.rtt = duration_cast<milliseconds>(rtt);
-		}
+        void set_recv_sequence_num(uint32_t seq){ netstat_.recv_sequence_num = seq; }
+        void UpdateHeartbeatSent()  { netstat_.last_heartbeat_sent = std::chrono::steady_clock::now(); }
+        void UpdateHeartbeatRecv()  { netstat_.last_heartbeat_recv = std::chrono::steady_clock::now(); }
+        void UpdatePingSent()       { netstat_.last_ping_sent = std::chrono::steady_clock::now(); }
+        void UpdateRtt()
+        {
+            using namespace std::chrono;
+            nanoseconds rtt = steady_clock::now() - netstat_.last_ping_sent;
+            netstat_.rtt = duration_cast<milliseconds>(rtt);
+        }
 
-		// tracker status
-		uint8_t init_result() const { return status_.init_result; }
-		uint8_t battery_perc() const { return status_.battery_level; }
+        // tracker status
+        uint8_t init_result() const  { return status_.init_result; }
+        uint8_t battery_perc() const { return status_.battery_level; }
 
-		void set_tracker_status(TrackerStatus status) { status_ = status; }
+        TrackerStatus tracker_status() const          { return status_; }
+        void set_tracker_status(TrackerStatus status) { status_ = status; }
 
-		// tracker statistic
-		uint8_t execution_time() const { return statistic_.execution_time; }
-		uint8_t interrupt_miss_rate() const { return statistic_.interrupt_miss_rate; }
-		uint8_t imu_miss_rate() const { return statistic_.imu_miss_rate; }
+        // tracker statistic
+        uint8_t execution_time() const      { return statistic_.execution_time; }
+        uint8_t interrupt_miss_rate() const { return statistic_.interrupt_miss_rate; }
+        uint8_t imu_miss_rate() const       { return statistic_.imu_miss_rate; }
 
-		void set_tracker_statistic(TrackerStatistic statistic) { statistic_ = statistic; }
+        TrackerStatistic tracker_statistic() const             { return statistic_; }
+        void set_tracker_statistic(TrackerStatistic statistic) { statistic_ = statistic; }
 
-		// behavior
-		uint8_t behavior() const { return behavior_.Encode(); }
-		bool active() const { return behavior_.active; }
-		bool raw() const { return behavior_.raw; }
-		bool led() const { return behavior_.led; }
+        // configuration
+        bool behavior_led() const       { return config_.behavior().led; }
+        bool behavior_active() const    { return config_.behavior().active; }
+        bool behavior_raw() const       { return config_.behavior().raw; }
+        bool behavior_nominal() const   { return config_.behavior().nominal; }
 
         void set_behavior_led(bool on)      { config_.set_led(on); }
         void set_behavior_active(bool on)   { config_.set_active(on); }
         void set_behavior_raw(bool on)      { config_.set_raw(on); }
         void set_behavior_nominal(bool on)  { config_.set_nominal(on); }
 
-		// calibration
-		TrackerCalibration calibration() const { return calib_; }
-		const float* gyro_transform() const { return calib_.gyr_transform; }
-		const float* accel_transform() const { return calib_.acc_transform; }
-		const float* mag_transform() const { return calib_.mag_transform; }
-		const float* noise_variance() const { return calib_.gyr_noise_var; }
-		const TrackerCalibration& calibration_ref() const { return calib_; }
+        uint8_t                   behavior_encoded() const  { return config_.behavior().Encode(); }
+        TrackerBehavior           behavior() const          { return config_.behavior(); }
+        TrackerCalibration        calibration() const       { return config_.calibration(); }
+        const TrackerCalibration& calibration_cref() const  { return config_.calibration(); }
 
-		void set_calibration(TrackerCalibration calib) { calib_ = calib; validator_.InvalidateCalibration(); }
+        void set_behavior(uint8_t encoded_behavior)          { config_.set_behavior(TrackerBehavior::Decode(encoded_behavior)); }
+        void set_behavior(TrackerBehavior behavior)          { config_.set_behavior(behavior); }
+        void set_calibration(TrackerCalibration calibration) { config_.set_calibration(calibration); }
 
-		// validator
-		std::vector<ConfigurationKey> GetEveryInvalid() const { return validator_.GetEveryInvalid(); }
-		bool IsAllValid() const { return validator_.IsAllValid(); }
-		bool IsValid(ConfigurationKey key) const { return validator_.IsValid(key); }
+        bool IsAllSynced() const           { return config_.IsAllValid(); }
+        bool IsBehaviorSynced() const      { return config_.IsValid(ConfigurationKey::Behavior); }
+        bool IsGyrTransformSynced() const  { return config_.IsValid(ConfigurationKey::GyrTransform); }
+        bool IsAccTransformSynced() const  { return config_.IsValid(ConfigurationKey::AccTransform); }
+        bool IsMagTransformSynced() const  { return config_.IsValid(ConfigurationKey::MagTransform); }
+        bool IsNoiseVarianceSynced() const { return config_.IsValid(ConfigurationKey::NoiseVariance); }
+        std::vector<ConfigurationKey> GetEveryUnsynced() const { return config_.GetEveryInvalid(); }
 
-		void InvalidateAll() { validator_.InvalidateAll(); }
-		void Validate(ConfigurationKey key) { validator_.Validate(key); }
+        void SetBehaviorSynced()        { config_.Validate(ConfigurationKey::Behavior); }
+        void SetGyrTransformSynced()    { config_.Validate(ConfigurationKey::GyrTransform); }
+        void SetAccTransformSynced()    { config_.Validate(ConfigurationKey::AccTransform); }
+        void SetMagTransformSynced()    { config_.Validate(ConfigurationKey::MagTransform); }
+        void SetNoiseVarianceSynced()   { config_.Validate(ConfigurationKey::NoiseVariance); }
 
-		// tracker data
-		Quaternionf orientation() const { return data_.orientation; }
-		RawDataSet raw_data() const { return data_.raw; }
-		Vector3f gyro() const { return data_.raw.gyr; }
-		Vector3f accel() const { return data_.raw.acc; }
-		Vector3f mag() const { return data_.raw.mag; }
+        // tracker data
+        const RawDataSet& raw_data() const          { return data_.raw(); }
+        const NominalDataSet& nominal_data() const  { return data_.nominal(); }
+        Vector3f raw_gyro() const                   { return data_.raw().gyr; }
+        Vector3f raw_accel() const                  { return data_.raw().acc; }
+        Vector3f raw_mag() const                    { return data_.raw().mag; }
+        Quaternionf orientation() const             { return data_.nominal().orientation; }
+        Vector3f linear_acceleration() const        { return data_.nominal().linear_acceleration; }
+        Vector3f magnetic_disturbance() const       { return data_.nominal().magnetic_disturbance; }
 
-		TrackerData tracker_data() const { return data_; }
-		bool IsRawDataUpdated() { bool temp = raw_data_updated_; raw_data_updated_ = false; return temp; }
-		bool IsOrientationUpdated() { bool temp = orientation_updated_; orientation_updated_ = false; return temp; }
+        bool IsRawDataUpdated()     { return data_.IsRawUpdated(); }
+        bool IsNominalDataUpdated() { return data_.IsNominalUpdated(); }
+        
+        void set_raw_data(RawDataSet raw)             { data_.set_raw(raw); }
+        void set_nominal_data(NominalDataSet nominal) { data_.set_nominal(nominal); }
 
-		void set_orientation(Quaternionf quat) { data_.orientation = quat; orientation_updated_ = true; }
-		void set_raw_data(RawDataSet raw) { data_.raw = raw; raw_data_updated_ = true; }
 
-		// update request indicator
-		void RequestStatisticUpdate() { statistic_update_required_ = true; }
-		void RequestStatusUpdate() { status_update_required_ = true; }
-		void RequestLocate() { locate_required_ = true; }
+    // misc request indicator
+    public:
+        bool IsStatisticUpdateRequired() { bool temp = statistic_update_required_; statistic_update_required_ = false; return temp; }
+        bool IsStatusUpdateRequired()    { bool temp = status_update_required_; status_update_required_ = false; return temp; }
+        bool IsLocateRequired()          { bool temp = locate_required_; locate_required_ = false; return temp; }
 
-		bool IsStatisticUpdateRequired() { bool temp = statistic_update_required_; statistic_update_required_ = false; return temp; }
-		bool IsStatusUpdateRequired() { bool temp = status_update_required_; status_update_required_ = false; return temp; }
-		bool IsLocateRequired() { bool temp = locate_required_; locate_required_ = false; return temp; }
-		
-	private:
-		TrackerInformation info_;
-		TrackerNetworkStatistics netstat_;
-		TrackerStatus status_;
-		TrackerStatistic statistic_;
-		TrackerBehavior behavior_;
-		TrackerCalibration calib_;
-		ConfigurationValidator validator_;
-		TrackerData data_;
+        void RequestStatisticUpdate() { statistic_update_required_ = true; }
+        void RequestStatusUpdate()    { status_update_required_ = true; }
+        void RequestLocate()          { locate_required_ = true; }
 
-		bool raw_data_updated_ = false;
-		bool orientation_updated_ = false;
+    private:
+        bool statistic_update_required_ = false;
+        bool status_update_required_ = false;
+        bool locate_required_ = false;
 
-		bool statistic_update_required_ = false;
-		bool status_update_required_ = false;
-		bool locate_required_ = false;
-	};
+        void ResetRequestIndicator()
+        {
+            statistic_update_required_ = false;
+            status_update_required_ = false;
+            locate_required_ = false;
+        }
+
+
+    // private member
+    private:
+        unsigned long address_;
+        std::string name_;
+        ConnectionStatus connection_;
+
+        TrackerNetworkStatistics netstat_;
+        TrackerStatus status_;
+        TrackerStatistic statistic_;
+        TrackerConfiguration config_;
+        TrackerData data_;
+    };
 
 }	// namespace dkvr

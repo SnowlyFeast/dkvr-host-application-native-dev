@@ -30,7 +30,7 @@ namespace dkvr {
 
 		bool PeekRecv();
 		void HandleRecv();
-		bool PeekWritability();
+		bool PeekWritability() const;
 		void SendOneDatagram();
 
 		ThreadContainer<Winsock2UDPServer> winsock_thread_;

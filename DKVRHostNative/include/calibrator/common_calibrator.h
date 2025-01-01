@@ -13,7 +13,6 @@ namespace dkvr
 	{
 	public:
 		static Eigen::Vector3f CalculateNoiseVariance(const std::vector<Eigen::Vector3f>& samples);
-		static void TransformSamples(std::vector<Eigen::Vector3f>& samples, const CalibrationMatrix& calib);
 		static void TransformNoiseVariance(Eigen::Vector3f& noise_var, const CalibrationMatrix& calib);
 	};
 
